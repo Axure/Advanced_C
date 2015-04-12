@@ -9,7 +9,7 @@ typedef struct _node {
 
 typedef struct {
 	Node * head;
-
+	Node * tail;
 } List;
 
 typedef struct {
@@ -35,6 +35,7 @@ int main(int argc, char const *argv[])
 
 	List List_A = read_list();
 	List List_B = read_list();
+	add_head(&List_B, 0);
 	List List_C = merge_list(&List_A, &List_B);
 
 	print_list(&List_C);
@@ -45,6 +46,7 @@ int main(int argc, char const *argv[])
 void init_list(List * pList)
 {
 	pList->head = NULL;
+	pList->tail = NULL;
 }
 
 Node * insert_head(Node * head, int value)
@@ -61,6 +63,7 @@ Node * insert_head(Node * head, int value)
 void add_head(List * pList, int value)
 { /* This function has a side effect. */
 	pList->head = insert_head(pList->head, value);
+	if (pList->tail == NULL) pList->tail = pList->head;
 }
 
 void add_tail(List * pList, int value)
@@ -69,11 +72,13 @@ void add_tail(List * pList, int value)
 
 	newTail->value = value;
 	newTail->next = NULL;
-	if (pList->head == NULL) pList->head = newTail;
+	if (pList->head == NULL) {
+		pList->head = newTail;
+		pList->tail = newTail;
+	}
 	else {
-		Node * _pointer = pList->head;
-		while(_pointer->next != NULL) _pointer = _pointer->next;
-		_pointer->next = newTail;
+		pList->tail->next = newTail;
+		pList->tail = newTail;
 	}
 
 	/* Maybe we should use recursion and pass the last available node address.. This is a handsome idea! */
@@ -174,7 +179,38 @@ void normalize(Polynomial * pPolynomial)
 	init_list(&newExponent);
 	init_list(&newCoefficient);
 
+	Node *__pointer_E;
+	Node *__pointer_C;
 
+	Node * _pointer_E = pPolynomial->exponents.head;
+	Node * _pointer_C = pPolynomial->coefficient.head;
+
+	while (_pointer_E != NULL)
+	{
+		if (newExponent.head == NULL)
+		{
+			add_head(&newExponent, _pointer_E->value);
+			add_head(&newCoefficient, _pointer_C->value);
+		}
+		else
+		{
+			__pointer_E = newExponent.head;
+			__pointer_C = newExponent.head;
+			while (__pointer_E->value > _pointer_E->value)
+			{
+				__pointer_E = __pointer_E->next;
+				__pointer_C = __pointer_C->next;
+			}
+			if (__pointer_E->value == _pointer_E->value) __pointer_C->value += _pointer_C->value;
+			else
+			{
+				insert_head(Node *head, int value)
+			}
+		}
+
+		_pointer_E = _pointer_E->next;
+		_pointer_C = _pointer_C->next;
+	}
 
 	pPolynomial->exponents = newExponent;
 	pPolynomial->coefficient = newCoefficient;
