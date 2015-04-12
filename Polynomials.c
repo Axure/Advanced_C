@@ -1,33 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct {
+	int exponent, coefficient;
+	int sign;
+} Monomial;
+
 typedef struct _node * pNode;
 typedef struct _node {
-	int value;
-	struct _node * next;
+	Monomial value;
+	struct _node * previous, * next;
 } Node;
 
 typedef struct {
-	Node * head;
+	Node * head, * tail;
 
 } List;
 
-typedef struct {
-	List exponents, coefficient;
-} Polynomial;
+typedef List Polynomial;
+
+
+
+
+
 
 /* We need a sort
 	and a coordinated sort
 	*/
 
-Node * insert_head(Node * head, int value);
-void add_head(List * pList, int value);
-void add_tail(List * pList, int value);
+int get_type(const char ch);
+int cmpfunc (const void * a, const void * b);
+Node * insert_head(Node * head, Monomial value);
+void add_head(List * pList, Monomial value);
+void add_tail(List * pList, Monomial value);
+void print_monomial(Monomial monomial);
 void _print_list(Node * head);
 void print_list(List * pList);
 List read_list();
 List merge_list(List * pList_A, List * pList_B);
 void normalize(Polynomial * pPolynomial);
+
+int get_type(const char ch)
+{
+	if (ch >= 48 && ch < 57) return 1;
+	if (ch == '+' || ch =='-') return 2;
+	if (ch == 'x') return 4;
+	return 0;
+}
+
+int cmpfunc (const void * a, const void * b)
+{
+   return ( ((Monomial*)b)->exponent - ((Monomial*)a)->exponent );
+}
 
 int main(int argc, char const *argv[])
 {
@@ -35,9 +59,10 @@ int main(int argc, char const *argv[])
 
 	List List_A = read_list();
 	List List_B = read_list();
-	List List_C = merge_list(&List_A, &List_B);
 
-	print_list(&List_C);
+
+	print_list(&List_A);
+	print_list(&List_B);
 
 	return 0;
 }
@@ -45,38 +70,54 @@ int main(int argc, char const *argv[])
 void init_list(List * pList)
 {
 	pList->head = NULL;
+	pList->tail = NULL;
 }
 
-Node * insert_head(Node * head, int value)
+Node * insert_head(Node * head, Monomial value)
 { /* Callback? */
 	Node * newHead = (Node*)malloc(sizeof(Node));
 
 	newHead->value = value;
 	newHead->next = head;
+	head->previous = newHead;
 	/* head = newHead; // This is redundant unless you pass the pointer, again, by reference... */
 
 	return newHead;
 }
 
-void add_head(List * pList, int value)
+void add_head(List * pList, Monomial value)
 { /* This function has a side effect. */
 	pList->head = insert_head(pList->head, value);
 }
 
-void add_tail(List * pList, int value)
+void add_tail(List * pList, Monomial value)
 {
 	Node * newTail = (Node*)malloc(sizeof(Node));
 
 	newTail->value = value;
+	newTail->previous = NULL;
 	newTail->next = NULL;
-	if (pList->head == NULL) pList->head = newTail;
-	else {
+	if (pList->head == NULL)
+	{
+		pList->head = newTail;
+	}
+	else
+	{
 		Node * _pointer = pList->head;
 		while(_pointer->next != NULL) _pointer = _pointer->next;
 		_pointer->next = newTail;
+		newTail->previous = _pointer;
 	}
 
 	/* Maybe we should use recursion and pass the last available node address.. This is a handsome idea! */
+}
+
+void print_monomial(Monomial monomial)
+{
+	if (monomial.sign == -1) printf("-");
+	printf("%d", monomial.coefficient);
+	if (monomial.exponent >= 1) printf("x");
+	if (monomial.exponent >= 2) printf("%d", monomial.exponent);
 }
 
 void _print_list(Node * head)
@@ -86,10 +127,17 @@ void _print_list(Node * head)
 	Node * _head = head;
 	while(_head != NULL) {
 
-		if (_head->next != NULL) printf("%d ", _head->value);
-		else printf("%d\n", _head->value);
+		if (_head == head) print_monomial(_head->value);
+		else
+		{
+			if (_head->value.sign == 1) printf("+");
+			print_monomial(_head->value);
+		}
+
+
 		_head = _head->next;
 	}
+	printf("\n");
 
 	
 }
@@ -106,13 +154,66 @@ List read_list()
 	List newList;
 	init_list(&newList);
 
-	int _value;
 
-	while((scanf("%d", &_value) && _value != -1))
+
+	char ch;
+
+	Monomial _tempMonomial;
+	_tempMonomial.exponent = 0;
+	_tempMonomial.coefficient = 0;
+	_tempMonomial.sign = 1;
+	int beforeOrAfter = 0;
+/* This is exactly a test of ability! */
+	while((EOF != (ch = getchar()) && ch != '\n'))
 	{
-		add_tail(&newList, _value);
+		switch (get_type(ch) + 8 * beforeOrAfter)
+		{
+			case 1: /* before, and receive a digit */
+				_tempMonomial.coefficient = 10 * _tempMonomial.coefficient + ch - 48;
+				break;
+			case 2: /* before, and receive a symbol */
+				/* This is not gonna happen? */
+				if (ch == '-') _tempMonomial.sign = -1;
+				break;
+			case 4: /* before, and receive an x */
+				beforeOrAfter = 1; /* sets to after */
+				break;
+			case 9: /* after, and receive a digit */
+				_tempMonomial.exponent = 10 * _tempMonomial.exponent + ch - 48;
+				break;
+			case 10: /* after, and receive a symbol */
+				beforeOrAfter = 0; /* sets to before */
+				if (_tempMonomial.exponent == 0) _tempMonomial.exponent = 1;
+				add_tail(&newList, _tempMonomial);
+				/* reinitialize monomial */
+				_tempMonomial.exponent = 0;
+				_tempMonomial.coefficient = 0;
+				if (ch == '+') _tempMonomial.sign = 1;
+				else _tempMonomial.sign = -1;
+				break;
+			case 12: /* after, and receive an x */
+				/* This is unreasonable */
+				break;
+			default:
+				break;
+		}
+
 	}
-	print_list(&newList);
+	/* if ends */
+	if (beforeOrAfter == 0)
+	{
+		_tempMonomial.exponent = 0; /* Good for refactoring */
+	}
+	else
+	{
+		if (_tempMonomial.exponent == 0)
+		{
+			_tempMonomial.exponent = 1;
+		}
+	}
+	add_tail(&newList, _tempMonomial);
+
+
 	return newList;
 
 }
@@ -134,7 +235,7 @@ List merge_list(List * pList_A, List * pList_B)
 		switch (state)
 		{
 			case 3:
-				if (pHead_A->value > pHead_B->value)
+				if (cmpfunc(&pHead_A->value, &pHead_B->value) < 0)
 				{
 					add_tail(&newList, pHead_B->value);
 					pHead_B = pHead_B->next;
@@ -170,14 +271,8 @@ List merge_list(List * pList_A, List * pList_B)
 
 void normalize(Polynomial * pPolynomial)
 {
-	List newExponent, newCoefficient;
-	init_list(&newExponent);
-	init_list(&newCoefficient);
 
 
-
-	pPolynomial->exponents = newExponent;
-	pPolynomial->coefficient = newCoefficient;
 
 
 
