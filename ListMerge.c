@@ -133,8 +133,18 @@ List merge_list(List * pList_A, List * pList_B)
 				}
 				else
 				{
-					add_tail(&newList, pHead_A->value);
-					pHead_A = pHead_A->next;	
+					if (pHead_A->value < pHead_B->value)
+					{
+						add_tail(&newList, pHead_A->value);
+						pHead_A = pHead_A->next;
+					}
+					else
+					{
+						add_tail(&newList, pHead_A->value);
+						pHead_A = pHead_A->next;
+						pHead_B = pHead_B->next;
+					}
+
 				}
 				break;
 			case 2:
