@@ -91,7 +91,7 @@ int main(int argc, char const *argv[])
 
 	List_C = multiply(&List_A, &List_B);
 	print_list(&List_C);
-	printf("FUcked!\n");
+
 
 	return 0;
 }
@@ -144,9 +144,9 @@ void add_tail(List * pList, Monomial value)
 void print_monomial(Monomial monomial)
 {
 	if (monomial.sign == -1) printf("-");
-	printf("%d", monomial.coefficient);
+	if (abs(monomial.coefficient) != 1 || monomial.exponent == 0) printf("%d", monomial.coefficient);
 	if (monomial.exponent != 0) printf("x");
-	if (monomial.exponent != 1 || monomial.exponent != 0) printf("%d", monomial.exponent);
+	if (monomial.exponent != 1 && monomial.exponent != 0) printf("%d", monomial.exponent);
 }
 
 void _print_list(Node * head)
@@ -259,7 +259,7 @@ List merge_list(List * pList_A, List * pList_B)
 
 	int state;
 	Monomial newMonomial;
-	printf("Started!\n");
+
 	while ((state = (pHead_A != NULL) + 2 * (pHead_B != NULL)) != 0)
 	{
 		// printf("Difference is %d - %d = %d\n", (pHead_A->value).exponent, (pHead_B->value).exponent, cmpfunc(&pHead_B->value, &pHead_A->value));
@@ -268,7 +268,7 @@ List merge_list(List * pList_A, List * pList_B)
 			case 3:
 				if (cmpfunc(&pHead_B->value, &pHead_A->value) < 0)
 				{
-					printf("FUcked!\n");
+
 					add_tail(&newList, pHead_B->value);
 					pHead_B = pHead_B->next;
 				}
@@ -283,10 +283,7 @@ List merge_list(List * pList_A, List * pList_B)
 					{
 						
 						newMonomial.exponent = pHead_A->value.exponent;
-						print_monomial(pHead_A->value);
-						printf("\n");
-						print_monomial(pHead_B->value);
-						printf("\n");
+
 						newMonomial.coefficient = pHead_A->value.coefficient * pHead_A->value.sign + pHead_B->value.coefficient * pHead_B->value.sign;
 						newMonomial.sign = (newMonomial.coefficient >= 0) ? 1 : -1;
 						newMonomial.coefficient = abs(newMonomial.coefficient);
@@ -300,7 +297,7 @@ List merge_list(List * pList_A, List * pList_B)
 			case 2:
 				while (pHead_B != NULL)
 				{
-					printf("Case 2\n");
+
 					add_tail(&newList, pHead_B->value);
 					pHead_B = pHead_B->next;
 				}
@@ -343,12 +340,12 @@ Polynomial inverse(Polynomial *pPolynomial)
 	Node * pNode = pPolynomial->head;
 	while (pNode != NULL)
 	{
-		printf("FUcked!\n");
+
 		_tempMonomial.exponent = pNode->value.exponent;
 		_tempMonomial.coefficient = pNode->value.coefficient;
 		_tempMonomial.sign = -(pNode->value.sign);
 		_tempMonomial.coefficient = abs(_tempMonomial.coefficient);
-		printf("Coef is %d\n", _tempMonomial.coefficient);
+
 		add_tail(&inversePolynomial, _tempMonomial);
 
 		pNode = pNode->next;
@@ -371,12 +368,12 @@ Polynomial shift(Polynomial * pPolynomial, int position)
 	Node * pNode = pPolynomial->head;
 	while (pNode != NULL)
 	{
-		printf("FUcked!\n");
+
 		_tempMonomial.exponent = pNode->value.exponent + position;
 		_tempMonomial.coefficient = pNode->value.coefficient;
 		_tempMonomial.sign = pNode->value.sign;
 
-		printf("Coef is %d\n", _tempMonomial.coefficient);
+
 		add_tail(&shiftedPolynomial, _tempMonomial);
 
 		pNode = pNode->next;
@@ -396,12 +393,12 @@ Polynomial multiply_by_number(Polynomial *pPolynomial, int number)
 	Node * pNode = pPolynomial->head;
 	while (pNode != NULL)
 	{
-		printf("FUcked!\n");
+
 		_tempMonomial.exponent = pNode->value.exponent;
 		_tempMonomial.coefficient = number * pNode->value.coefficient;
 		_tempMonomial.sign = pNode->value.sign;
 		_tempMonomial.coefficient = abs(_tempMonomial.coefficient);
-		printf("Coef is %d\n", _tempMonomial.coefficient);
+
 		add_tail(&product, _tempMonomial);
 
 		pNode = pNode->next;
@@ -420,11 +417,11 @@ Polynomial multiply(Polynomial * pPolynomial_A, Polynomial * pPolynomial_B)
 	{
 
 		_tempPolynomial = multiply_by_number(pPolynomial_A, pNode->value.coefficient);
-		_tempPolynomial = shift(pPolynomial_A, pNode->value.exponent);
-		printf("====== fuck is: ");
-		print_list(&_tempPolynomial);
+		_tempPolynomial = shift(&_tempPolynomial, pNode->value.exponent);
+
+
 		product = add(&product, &_tempPolynomial);
-		printf("======\n");
+
 		pNode = pNode->next;
 	}
 
