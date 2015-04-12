@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef struct {
 	int exponent, coefficient;
@@ -28,9 +29,12 @@ typedef List Polynomial;
 	and a coordinated sort
 	*/
 
+void color_begin();
+void color_end();
 int abs(int x);
 int get_type(const char ch);
 int cmpfunc (const void * a, const void * b);
+void init_list(List * pList);
 Node * insert_head(Node * head, Monomial value);
 void add_head(List * pList, Monomial value);
 void add_tail(List * pList, Monomial value);
@@ -46,6 +50,52 @@ Polynomial minus(Polynomial * pPolynomial_A, Polynomial * pPolynomial_B);
 Polynomial shift(Polynomial * pPolynomial, int position);
 Polynomial multiply_by_number(Polynomial *pPolynomial, int number);
 Polynomial multiply(Polynomial * pPolynomial_A, Polynomial * pPolynomial_B);
+void release_list(List * pList);
+
+void color_begin()
+{
+	srand(time(NULL));
+	int rnd = rand() % 10;
+	switch (rnd)
+	{
+		case 0:
+			printf("\e[0;31m");
+			break;
+		case 1:
+			printf("\e[1;31m");
+			break;
+		case 2:
+			printf("\e[0;34m");
+			break;
+		case 3:
+			printf("\e[1;34m");
+			break;
+		case 4:
+			printf("\e[0;36m");
+			break;
+		case 5:
+			printf("\e[1;36m");
+			break;
+		case 6:
+			printf("\e[0;32m");
+			break;
+		case 7:
+			printf("\e[1;32m");
+			break;
+
+		case 8:
+			printf("\e[0;33m");
+			break;
+		case 9:
+			printf("\e[1;33m");
+			break;
+	}
+}
+
+void color_end()
+{
+	printf("\e[0m");
+}
 
 int abs(int x)
 {
@@ -67,31 +117,76 @@ int cmpfunc (const void * a, const void * b)
 
 int main(int argc, char const *argv[])
 {
+	List List_A;
+	List List_B;
+	List List_C;
+
+	init_list(&List_A);
+	init_list(&List_B);
+	init_list(&List_C);
+
+	int r;
+	char c;
+	printf("\e[0;31mType in -1 to terminate, 1 to add, 2 to minus, 3 to multiply.\n\e[0m\e[0;34mType in two polynomials after choosing operation.\n\e[0m\e[0;33mType in as 5x3+2x-1.\n\e[0m");
+	while ((scanf("%d", &r) && r != -1))
+	{
+		printf("r is %d\n", r);
+		c = getchar();
+		List_A = read_list();
+		List_B = read_list();
+		switch (r)
+		{
+			case 1:
+				List_C = add(&List_A, &List_B);
+				break;
+			case 2:
+				List_C = minus(&List_A, &List_B);
+				break;
+			case 3:
+				List_C = multiply(&List_A, &List_B);
+				break;
+			default:
+				break;
+		}
+		color_begin();
+		printf("The first polynomial is: ");
+		print_list(&List_A);
+		color_end();
+
+		color_begin();
+		printf("The second polynomial is: ");
+		print_list(&List_B);
+		color_end();
+
+		color_begin();
+		switch (r)
+		{
+			case 1:
+				printf("The sum is: ");
+				break;
+			case 2:
+				printf("The differnce is: ");
+				break;
+			case 3:
+				printf("The product is: ");
+				break;
+			default:
+				break;
+		}
+
+		
+		print_list(&List_C);
+		color_end();
+	}
+
+	release_list(&List_A);
+	release_list(&List_B);
+	release_list(&List_C);
 	
+	color_begin();
 
-	List List_A = read_list();
-	List List_B = read_list();
-
-	List List_C = add(&List_A, &List_B);
-	print_list(&List_A);
-	print_list(&List_B);
-	// print_list(&List_C);
-
-	// List_C = minus(&List_A, &List_B);
-	// // List_C = inverse(&List_B);
-	// print_list(&List_C);
-
-	// List_C = shift(&List_C, -5);
-	// print_list(&List_C);
-
-	// List_C = multiply_by_number(&List_C, 5);
-	// print_list(&List_C);
-	// printf("FUcked!\n");
-
-
-	List_C = multiply(&List_A, &List_B);
-	print_list(&List_C);
-
+	printf("Program exited normally. Thanks for using.");
+	color_end();
 
 	return 0;
 }
@@ -426,4 +521,16 @@ Polynomial multiply(Polynomial * pPolynomial_A, Polynomial * pPolynomial_B)
 	}
 
 	return product;
+}
+
+void release_list(List * pList)
+{
+	Node * pNode = pList->head;
+	Node * pAuxNode;
+	while (pNode != NULL)
+	{
+		pAuxNode = pNode;
+		pNode = pNode->next;
+		free(pAuxNode);
+	}
 }
