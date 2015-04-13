@@ -261,7 +261,10 @@ List read_list()
 			default:
 				break;
 		}
-
+		/* TODO:
+		1. Sort
+		2. Duplicate entries
+		*/
 	}
 	/* if ends */
 	if (beforeOrAfter == 0)
