@@ -39,3 +39,7 @@ Thumbs.db
 # IDE files #
 #############
 .idea
+
+# Test files #
+*.in
+*.out

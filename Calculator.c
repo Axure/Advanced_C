@@ -45,6 +45,14 @@ void print_list(List * pList);
 List read_list();
 List merge_list(List * pList_A, List * pList_B);
 
+Token stack_pop(List * pList);
+
+void init_tree(Tree * pRoot);
+void add_to_left(Tree * pRoot, Token value);
+void add_to_right(Tree * pRoot, Token value);
+
+Tree get_ast(List * pList);
+
 
 /*
 	an int version
@@ -73,7 +81,7 @@ int get_order(char c)
 int get_type(const char ch)
 {
 	if (ch >= 48 && ch < 57) return 1;
-	if (ch == '+' || ch =='-') return 2;
+	if (ch == '+' || ch == '-' || ch == '\\' || ch == '/' || ch == '^' || ch == '*' || ch == '%') return 2;
 	if (ch == '(' || ch == ')') return 8;
 	if (1) return 4; /* Defaults to complex functions */
 	/* Actually I don't want non-int functions in int mode */
@@ -88,7 +96,9 @@ int get_type(const char ch)
 
 int main(int argc, char const *argv[])
 {
-
+	List A;
+	A = read_list();
+	print_list(&A);
 
 	return 0;
 }
@@ -222,22 +232,18 @@ void print_token(Token token)
 			printf("%d", token.content.number);
 			break;
 		case 2:
-			switch (token.content.operation)
-			{
-				case '+':
-
-					break;
-				case '-':
-					
-					break;
-
-			}
+			printf("%c", token.content.operation);
 			break;
-		case 3:
+		case 4:
+			break;
+
+		case 8:
+			printf("%c", token.content.operation);
 			break;
 		default:
 			break;
 	}
+
 }
 
 
@@ -256,8 +262,84 @@ List read_list()
 	_tempToken.type = 0; /* Empty type? */
 
 
+
 	while((EOF != (ch = getchar()) && ch != '\n'))
 	{
+
+		/* Things are a little bit different from the polynomial case, as you have to record all the chars. */
+
+		switch (get_type(ch))
+		{
+			case 1: /* Receives a digit */
+				printf("A digit! %d\n", ch - 48);
+				if (_tempToken.type == 0)
+				{
+					_tempToken.type = 1;
+					_tempToken.content.number = ch - 48;
+				} else {
+					if (_tempToken.type == 1)
+					{
+						_tempToken.content.number = 10 * _tempToken.content.number + ch - 48;
+					}
+				}
+
+				break;
+			case 2: /* Receives a binary */
+				if (_tempToken.type == 0)
+				{
+
+				}
+				if (_tempToken.type == 1)
+				{
+					add_tail(&newList, _tempToken);
+					_tempToken.type = 2;
+					_tempToken.content.operation = ch;
+					add_tail(&newList, _tempToken);
+					_tempToken.type = 0;
+				}
+				break;
+				/* Other cases are invalid? */
+
+			case 4: /* Receives an unary operation */
+				if (_tempToken.type == 0)
+				{
+					_tempToken.type = 4;
+					_tempToken.content.operation = ch;
+					add_tail(&newList, _tempToken);
+					_tempToken.type = 0;
+				}
+				if (_tempToken.type == 4)
+				{
+					
+					/* We don't currently deal with this case */
+				}
+				break;
+
+			case 8: /* Receives a bracket */
+				if (_tempToken.type == 0)
+				{
+
+				}
+				if (_tempToken.type == 1)
+				{
+
+				}
+				add_tail(&newList, _tempToken);
+				_tempToken.type = 8;
+				_tempToken.content.operation = ch;
+				add_tail(&newList, _tempToken);
+				_tempToken.type = 0;
+				break;
+
+			default:
+				break;
+
+		}
+
+		/* The crucial part in the lexical analysis is dealing with the delimiters */
+
+
+		/*
 		if (get_type(ch) == 4)
 		{
 
@@ -265,7 +347,7 @@ List read_list()
 		else
 		{
 			switch(_tempToken.type){
-				/*
+				
 				we use 16 * temp + current
 				case 0 + 1, 2, 4, 8 totally new
 				case 16 + 1, 2, 4, 8, after a digit
@@ -289,21 +371,25 @@ List read_list()
 
 				brackets and be treated specially for simplicity
 
-				*/
+				The lexical part is context irrelevant maybe...
+				
 				case 1:
 
 				default:
 					break;
 			}
-		}
+		} */
 
 
 	}
+
+	return newList;
 
 	
 
 
 }
+
 
 
 void release_list(List * pList)
@@ -317,3 +403,37 @@ void release_list(List * pList)
 		free(pAuxNode);
 	}
 }
+
+Token stack_pop(List * pList)
+{
+	Token _tempToken = pList->tail->value;
+	Node * pAuxNode = pList->tail;
+	pList->tail = pList->tail->previous;
+
+	free(pAuxNode);
+
+	return _tempToken;
+}
+
+void init_tree(Tree * pRoot)
+{
+	pRoot->root = NULL;
+}
+
+Tree get_ast(List * pList)
+{
+	Tree newTree;
+	init_tree(&newTree);
+
+	return newTree;
+}
+
+
+
+
+
+
+
+
+
+
