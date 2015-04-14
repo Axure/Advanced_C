@@ -57,6 +57,25 @@ void * stack_pop(pStack pStack);
 
 List read_token_list();
 
+typedef struct TreeNode * pTreeNode;
+typedef struct TreeNode
+{
+	void * pElement;
+	pTreeNode pLeft, pRight;
+} TreeNode;
+typedef struct Tree
+{
+	pTreeNode pRoot;
+	int elementSize;
+} Tree;
+typedef Tree * pTree;
+
+
+void init_tree(pTreeNode pRoot);
+void destroy_tree(pTreeNode pRoot);
+Tree get_ast(pList pList);
+
+
 int main(int argc, char const *argv[])
 {
 	
@@ -82,6 +101,8 @@ void unit_test()
 	add_tail(pMyList, &i);
 	print_list(pMyList, print_number);
 
+#ifdef _DEBUG
+
 	printf("Tail address is %ld \n", pMyList->pTail);
 	printf("Tail prev address is %ld \n", pMyList->pTail->pPrev);
 
@@ -104,6 +125,8 @@ void unit_test()
 	printf("\nTop is: ");
 	print_number(get_top(pMyList));
 	printf("\n");
+
+#endif
 	print_list(pMyList, print_number);
 
 	List newList = read_token_list();
@@ -405,4 +428,149 @@ List read_token_list()
 	}
 
 	return newList;
+}
+
+void init_tree(pTree pTree, int size)
+{
+	pTree->pRoot = NULL;
+	pTree->elementSize = size;
+}
+
+Tree get_ast(pList pList)
+{
+	Tree newTree;
+	pTree pNewTree;
+	init_tree(pNewTree, sizeof(Token));
+	Node * pRoot;
+	Node * pCurrent;
+
+	Stack newStack; /* We store the address.. OMG! */
+	pStack pNewStack;
+	init_list(pNewStack, sizeof(pTreeNode));
+	/* Traverse the token list */
+
+	Token _tempToken;
+	_tempToken.content.operation = '(';
+	_tempToken.type = 8;
+	add_head(pList, &_tempToken);
+	_tempToken.content.operation = ')';
+	add_tail(pList, &_tempToken);
+
+	Token _addressToken;
+	pNode _pNode = pList->pHead;
+
+	Node * _address;
+
+	Node * pAuxNode;
+
+
+	while (_pNode != NULL)
+	{
+		/* We need to switch to cases here! */
+		_tempToken = *(Token*)_pNode->pElement;
+		switch (_tempToken.type)
+		{
+
+
+			case 1:
+
+			
+
+			case 1:
+
+				if (pCurrent == NULL) /* If it's empty currently */
+				{
+					pCurrent = (Node*)malloc(sizeof(Node));
+					pCurrent->value.type = 1;
+					pCurrent->value.content.number = pNode->value.content.number;
+					pRoot = pCurrent;
+				}
+				else /* If not empty */
+				{
+
+				}
+				break;
+
+			case 2: /* If it's an operator */
+				if (pCurrent == NULL)
+				{
+
+				}
+				else /* if there is something in place */
+				{
+
+
+					pAuxNode = pCurrent;
+
+					pCurrent = (Node*)malloc(sizeof(Node));
+					pCurrent->value.type = pAuxNode->value.type;
+					pCurrent->value.content.operation = pNode->value.content.operation;
+					pRoot = pCurrent;
+					pCurrent->previous = pAuxNode;
+				}
+				break;
+
+			case 4:
+
+				break;
+
+			case 8: /* Declare a scope for brackets */
+				if (pNode->value.content.operation == '(')
+				{
+					// pRoot = (Node *)malloc(sizeof(Node));
+
+					if (pRoot == NULL)
+					{
+						_addressToken.content.number = -1;
+						add_tail(pList, _addressToken);
+					}
+					else
+					{
+						_addressToken.content.number = (long)pRoot;
+					}
+
+					pRoot = NULL;
+					pCurrent = NULL;
+
+					_addressToken.content.number = -1;
+					// _addressToken.content.number = (long)pRoot;
+					add_tail(pList, _addressToken);
+					/* Write here the malloc instead of in a function,
+					To get more refined control of the program */
+
+					pCurrent = pRoot;
+					// pCurrent->value.type = 0;
+				}
+				else
+				{
+					_address = (Node *)stack_pop(pList).content.number;
+					if (_address == (Node *)-1)
+					{
+						pCurrent = pRoot;
+						/* pRoot should not change */
+					}
+					else
+					{
+						pCurrent = pRoot;
+					}
+					pRoot = 
+					pCurrent = pRoot;
+				}
+				break;
+			default:
+				break;
+		}
+
+		pNode = pNode->next;
+	}
+
+	pAuxNode = pList->head;
+	pList->head = pList->head->next;
+	free(pAuxNode);
+
+	pAuxNode = pList->tail;
+	pList->tail = pList->tail->previous;
+	free(pAuxNode);
+
+	return newTree;
 }
