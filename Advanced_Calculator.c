@@ -101,6 +101,8 @@ void unit_test()
 	printf("\n");
 	print_list(pMyList, print_number);
 
+	destroy_list(pMyList);
+
 }
 
 void init_list(pList pList, int size)
@@ -108,6 +110,18 @@ void init_list(pList pList, int size)
 	pList->pHead = NULL;
 	pList->pTail = NULL;
 	pList->elementSize = size;
+}
+
+void destroy_list(pList pList)
+{
+	pNode _pHead = pList->pHead;
+	pNode _pAuxNode;
+	while (_pHead != NULL)
+	{
+		_pAuxNode = _pHead;
+		_pHead = _pHead->pNext;
+		free(_pAuxNode);
+	}
 }
 
 void add_head(pList pList, void * pElement)
@@ -238,7 +252,9 @@ void * stack_pop(pStack pStack)
 		}
 		else
 		{
-
+			free(pStack->pTail);
+			pStack->pTail = NULL;
+			pStack->pHead = NULL;
 		}
 
 
