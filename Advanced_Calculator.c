@@ -26,10 +26,18 @@ void print_list(pList pList, PrintFunction printFunction);
 
 /* I want to combine va_list with pseudo-generics */
 
-void print_number(void * number);
+void print_number(void * pNumber);
 
 
+typedef struct Token {
+	union {
+		int number;
+		char operation;
+	} content;
+	int type;
+} Token;
 
+void print_token(void * pToken);
 
 int main(int argc, char const *argv[])
 {
@@ -123,7 +131,22 @@ void print_list(pList pList, PrintFunction printFunction)
 }
 
 
-void print_number(void * number)
+void print_number(void * pNumber)
 {
-	printf("%d ", *(int *)number);
+	printf("%d ", *(int *)pNumber);
+}
+
+void print_token(void * pToken)
+{
+
+	switch (((Token *)pToken)->type)
+	{
+		case 1:
+
+			printf("%d", ((Token *)pToken)->content.number);
+
+		default:
+			printf("%d", ((Token *)pToken)->content.operation);		
+			break;
+	}
 }
