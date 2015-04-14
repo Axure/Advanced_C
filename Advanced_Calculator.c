@@ -39,6 +39,11 @@ typedef struct Token {
 
 void print_token(void * pToken);
 
+typedef List Stack;
+typedef Stack * pStack;
+void * stack_pop(pStack pStack);
+
+
 int main(int argc, char const *argv[])
 {
 	
@@ -56,8 +61,15 @@ void unit_test()
 	i = 3;
 	add_tail(pMyList, &i);
 	add_tail(pMyList, &i);
+
+	i = 4;
 	add_tail(pMyList, &i);
 	add_tail(pMyList, &i);
+	print_list(pMyList, print_number);
+
+	stack_pop(pMyList);
+	stack_pop(pMyList);
+	stack_pop(pMyList);
 	print_list(pMyList, print_number);
 
 }
@@ -149,4 +161,20 @@ void print_token(void * pToken)
 			printf("%d", ((Token *)pToken)->content.operation);		
 			break;
 	}
+}
+
+void * stack_pop(pStack pStack)
+{
+	if (pStack->pHead != NULL)
+	{
+		void * _pAux;
+		_pAux = pStack->pTail->pElement;
+
+		pStack->pTail = pStack->pTail->pPrev;
+		free(pStack->pTail->pNext);
+		pStack->pTail->pNext = NULL;
+
+		return _pAux;
+	}
+	return NULL;
 }
