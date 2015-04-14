@@ -9,6 +9,10 @@
 
 #endif
 
+int get_precedence(const char ch);
+int get_order(const char ch);
+int get_type(const char ch);
+
 typedef struct Node * pNode;
 typedef struct Node
 {
@@ -51,6 +55,7 @@ typedef Stack * pStack;
 void * get_top(pStack pStack);
 void * stack_pop(pStack pStack);
 
+List read_token_list();
 
 int main(int argc, char const *argv[])
 {
@@ -101,8 +106,42 @@ void unit_test()
 	printf("\n");
 	print_list(pMyList, print_number);
 
-	destroy_list(pMyList);
+	List newList = read_token_list();
+	print_list(&newList, print_token);
 
+	destroy_list(pMyList);
+	destroy_list(&newList);
+
+}
+
+int get_precedence(char ch)
+{
+	/* What is more small? */
+	if (ch == '\\' || ch == '%') return 4;
+	if (ch == '+' || ch == '-') return 5;
+	if (ch == '*' || ch == '/') return 6;
+	if (ch == '^') return 7;
+
+	return 100;
+
+}
+
+int get_order(char ch)
+{
+	if (ch == '^') return -1;
+	else return 1;
+}
+
+int get_type(const char ch)
+{
+	if (ch >= 48 && ch < 57) return 1;
+	if (ch == '+' || ch == '-' || ch == '\\' || ch == '/' || ch == '^' || ch == '*' || ch == '%') return 2;
+	if (ch == '(' || ch == ')') return 8;
+	if (1) return 4; /* Defaults to complex functions */
+	/* Actually I don't want non-long functions in long mode */
+	/* And invalid expression checker. We have to do that */
+	/* Maybe you can register your own functions in an array and we can use hash? */
+	return 8;
 }
 
 void init_list(pList pList, int size)
@@ -145,6 +184,7 @@ void add_head(pList pList, void * pElement)
 		pList->pHead->pPrev = newNode;
 		pList->pHead = newNode;
 	}
+
 
 
 }
@@ -207,10 +247,15 @@ void print_token(void * pToken)
 	{
 		case 1:
 
+#ifdef _DEBUG
+
+			printf("Debugging!");
+#endif
+
 			printf("%d", ((Token *)pToken)->content.number);
 
 		default:
-			printf("%d", ((Token *)pToken)->content.operation);		
+			printf("%c", ((Token *)pToken)->content.operation);		
 			break;
 	}
 }
@@ -261,4 +306,103 @@ void * stack_pop(pStack pStack)
 		return _pAux;
 	}
 	return NULL;
+}
+
+
+
+
+List read_token_list()
+{
+	List newList;
+	pList pNewList = &newList;
+	init_list(pNewList, sizeof(Token));
+
+
+
+	char ch;
+	Token _tempToken;
+	_tempToken.type = 0; /* Empty type? */
+
+
+
+	while((EOF != (ch = getchar()) && ch != '\n'))
+	{
+
+		/* Things are a little bit different from the polynomial case, as you have to record all the chars. */
+#ifdef _DEBUG
+		printf("Got character %c!\n", ch);
+#endif
+
+		switch (get_type(ch))
+		/* Be ware of the getchar() complex situation */
+		{
+			case 1: /* Receives a digit */
+				printf("A digit! %d\n", ch - 48);
+				if (_tempToken.type == 0)
+				{
+					_tempToken.type = 1;
+					_tempToken.content.number = ch - 48;
+				} else {
+					if (_tempToken.type == 1)
+					{
+						_tempToken.content.number = 10 * _tempToken.content.number + ch - 48;
+					}
+				}
+
+				break;
+			case 2: /* Receives a binary */
+				if (_tempToken.type == 0)
+				{
+
+				}
+				if (_tempToken.type == 1)
+				{
+					add_tail(pNewList, &_tempToken);
+					_tempToken.type = 2;
+					_tempToken.content.operation = ch;
+					add_tail(pNewList, &_tempToken);
+					_tempToken.type = 0;
+				}
+				break;
+				/* Other cases are invalid? */
+
+			case 4: /* Receives an unary operation */
+				if (_tempToken.type == 0)
+				{
+					_tempToken.type = 4;
+					_tempToken.content.operation = ch;
+					add_tail(pNewList, &_tempToken);
+					_tempToken.type = 0;
+				}
+				if (_tempToken.type == 4)
+				{
+					
+					/* We don't currently deal with this case */
+				}
+				break;
+
+			case 8: /* Receives a bracket */
+				if (_tempToken.type == 0)
+				{
+
+				}
+				if (_tempToken.type == 1)
+				{
+					add_tail(pNewList, &_tempToken);
+				}
+
+				_tempToken.type = 8;
+				_tempToken.content.operation = ch;
+				add_tail(pNewList, &_tempToken);
+				_tempToken.type = 0;
+				break;
+
+			default:
+				break;
+
+		}
+
+	}
+
+	return newList;
 }
