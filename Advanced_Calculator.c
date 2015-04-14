@@ -2,6 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define _DEBUG
+#undef _DEBUG
+
+#ifdef _DEBUG
+
+#endif
+
 typedef struct Node * pNode;
 typedef struct Node
 {
@@ -41,6 +48,7 @@ void print_token(void * pToken);
 
 typedef List Stack;
 typedef Stack * pStack;
+void * get_top(pStack pStack);
 void * stack_pop(pStack pStack);
 
 
@@ -65,11 +73,32 @@ void unit_test()
 	i = 4;
 	add_tail(pMyList, &i);
 	add_tail(pMyList, &i);
+	add_tail(pMyList, &i);
+	add_tail(pMyList, &i);
 	print_list(pMyList, print_number);
 
+	printf("Tail address is %ld \n", pMyList->pTail);
+	printf("Tail prev address is %ld \n", pMyList->pTail->pPrev);
+
+	printf("\nTop is: ");
+	print_number(get_top(pMyList));
+
 	stack_pop(pMyList);
+	printf("Tail address is %ld \n", pMyList->pTail);
+	printf("\nTop is: ");
+	print_number(get_top(pMyList));
 	stack_pop(pMyList);
+	printf("Tail address is %ld \n", pMyList->pTail);
+	printf("\nTop is: ");
+	print_number(get_top(pMyList));
 	stack_pop(pMyList);
+	printf("Tail address is %ld \n", pMyList->pTail);
+	printf("\nTop is: ");
+	print_number(get_top(pMyList));
+	stack_pop(pMyList);
+	printf("\nTop is: ");
+	print_number(get_top(pMyList));
+	printf("\n");
 	print_list(pMyList, print_number);
 
 }
@@ -114,7 +143,7 @@ void add_tail(pList pList, void * pElement)
 	pNode newNode = (pNode)malloc(sizeof(Node));
 	newNode->pElement = newPointer;
 
-	newNode->pPrev = pList->pHead;
+	newNode->pPrev = pList->pTail;
 	newNode->pNext = NULL;
 
 	if (pList->pTail == NULL)
@@ -125,7 +154,12 @@ void add_tail(pList pList, void * pElement)
 	else
 	{
 		pList->pTail->pNext = newNode;
+
 		pList->pTail = newNode;
+
+#ifdef _DEBUG
+		printf("Added tail address is %ld \n", pList->pTail);
+#endif
 	}
 
 
@@ -136,6 +170,10 @@ void print_list(pList pList, PrintFunction printFunction)
 	pNode _pHead = pList->pHead;
 	while (_pHead != NULL)
 	{
+#ifdef _DEBUG
+		printf("address %ld \n", _pHead);
+#endif
+		
 		printFunction(_pHead->pElement);
 		_pHead = _pHead->pNext;
 	}
@@ -163,16 +201,46 @@ void print_token(void * pToken)
 	}
 }
 
-void * stack_pop(pStack pStack)
+void * get_top(pStack pStack)
 {
 	if (pStack->pHead != NULL)
 	{
+		return pStack->pTail->pElement;
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+void * stack_pop(pStack pStack)
+{
+	if (pStack->pTail != NULL)
+	{
+
+#ifdef _DEBUG
+		printf("Not Null!");
+#endif
+		
 		void * _pAux;
 		_pAux = pStack->pTail->pElement;
 
-		pStack->pTail = pStack->pTail->pPrev;
-		free(pStack->pTail->pNext);
-		pStack->pTail->pNext = NULL;
+#ifdef _DEBUG
+		print_number(_pAux);
+#endif
+		
+
+		if (pStack->pTail->pPrev != NULL)
+		{
+			pStack->pTail = pStack->pTail->pPrev;
+			free(pStack->pTail->pNext);
+			pStack->pTail->pNext = NULL;
+		}
+		else
+		{
+
+		}
+
 
 		return _pAux;
 	}
