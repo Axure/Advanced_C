@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define _DEBUG
-#undef _DEBUG
+#define _DEBU
+
 
 #ifdef _DEBUG
 
@@ -135,13 +135,13 @@ void unit_test()
 	List newList = read_token_list();
 	print_list(&newList, print_token);
 
-	List refinedList;
-	refinedList = to_nested_list(&newList);
+// 	List refinedList;
+// 	refinedList = to_nested_list(&newList);
 
-#ifdef _DEBUG
-	printf("Succeessfully converted to nested list!\n");
-#endif
-	print_nested_list(&refinedList, print_token);
+// #ifdef _DEBUG
+// 	printf("Succeessfully converted to nested list!\n");
+// #endif
+// 	print_nested_list(&refinedList, print_token);
 
 	destroy_list(pMyList);
 	destroy_list(&newList);
@@ -279,7 +279,7 @@ void print_nested_list(pList pOldList, PrintFunction printFunction)
 	while (_pHead != NULL)
 	{
 #ifdef _DEBUG
-		printf("address %ld \n", _pHead);
+		printf("address %ld, element type is %d\n", _pHead, ((Token*)(_pHead->pElement))->type);
 #endif
 		if (((Token*)(_pHead->pElement))->type != 16)
 		{
@@ -317,9 +317,9 @@ void print_token(void * pToken)
 	{
 		case 1:
 
-#ifdef _DEBUG
+#ifdef _DEBUG_1
 
-			printf("Debugging!");
+			printf("\nDebugging!\n");
 #endif
 
 			printf("%d", ((Token *)pToken)->content.number);
@@ -348,7 +348,7 @@ void * stack_pop(pStack pStack)
 	{
 
 #ifdef _DEBUG
-		printf("Not Null!");
+		printf("Stack %ld is Not Null!\n", pStack);
 #endif
 		
 		void * _pAux;
@@ -356,6 +356,7 @@ void * stack_pop(pStack pStack)
 
 #ifdef _DEBUG
 		print_number(_pAux);
+		printf("\n");
 #endif
 		
 
@@ -499,10 +500,14 @@ List to_nested_list(pList pOldList)
 	while (_pHead != NULL)
 	{
 		Token* pToken = (Token*)(_pHead->pElement);
+		printf("Current token is: ");
+		print_token(pToken);
+		printf(", type is %d, address is %ld.\n", pToken->type, _pHead);
 		if (pToken->type == 8) {
 			if (pToken->content.operation == '(')
 			{
 				_pNewList = (pList)malloc(sizeof(List));
+				printf("\n\nEntering! Current stack tops at %d\n\n", _pNewList);
 				init_list(_pNewList, sizeof(pNode));
 				
 
@@ -514,16 +519,31 @@ List to_nested_list(pList pOldList)
 				count += 1;
 				_pCurrentList = _pNewList;
 				add_tail(pScopeStack, (void*)_pNewList);
+				printf("\n\nEntering! Current stack tops at %d\n\n", _pNewList);
 			}
 			else
 			{
 				_pCurrentList = (pList)stack_pop(pScopeStack);
+				printf("\n\nCurrent stack tops at %d\n\n", _pCurrentList);
 			}
 		}
 		else
 		{
+			printf("TOKEN being added is: ");
+			print_token((pToken));
+			printf(", type is %d, address is %ld.\n", pToken->type, _pHead);
+
 			add_tail(_pCurrentList, (void*)_pHead->pElement);
-			_pHead = _pHead->pNext;
+			
+		}
+		_pHead = _pHead->pNext;
+		if (_pHead == NULL)
+		{
+			printf("NULL!\n");
+		}
+		else
+		{
+			printf("Next address is %ld!\n", _pHead);
 		}
 
 	}
