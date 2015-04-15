@@ -43,8 +43,8 @@ typedef struct Token {
 	union {
 		int number;
 		char operation;
-		void * address;
 	} content;
+	void * address;
 	int type;
 } Token;
 
@@ -84,7 +84,8 @@ int main(int argc, char const *argv[])
 	if (argc >= 2 && strcmp(argv[1], _debug) == 0)
 	{
 		printf("Entering deubg mode!...\n");
-#define _DEBUG
+
+
 #ifdef _DEBUG
 		printf("Debug function is running!");
 		printf("Debug function is not running!");
@@ -292,7 +293,7 @@ void print_nested_list(pList pOldList, PrintFunction printFunction)
 
 	Stack _tokenStack;
 	pStack _pTokenStack = &_tokenStack;
-	init_list(_pTokenStack, sizeof(Token*));
+	init_list(_pTokenStack, sizeof(Token));
 
 	while (_pHead != NULL)
 	{
@@ -319,7 +320,7 @@ void print_nested_list(pList pOldList, PrintFunction printFunction)
 	while (_pToken != NULL)
 	{
 		printf("#%d: ", _pToken->content.number);
-		print_nested_list((pList)_pToken->content.address, printFunction);
+		print_nested_list((pList)_pToken->address, printFunction);
 		_pToken = (Token*)stack_pop(_pTokenStack);
 	}
 	printf("\n");
@@ -340,11 +341,16 @@ void print_token(void * pToken)
 
 #ifdef _DEBUG_1
 
-			printf("\nDebugging!\n");
+			printf("\nprint_token: Debugging!\n");
 #endif
 
 			printf("%d", ((Token *)pToken)->content.number);
+			break;
 
+		case -1:
+
+			printf("\n===\nprint_token: Address is %ld.\nFormula id is %d.\n===\n", ((Token *)pToken)->address, ((Token *)pToken)->content.number);
+			break;
 		default:
 			printf("%c", ((Token *)pToken)->content.operation);		
 			break;
@@ -513,16 +519,16 @@ List to_nested_list(pList pOldList)
 
 	Stack scopeStack;
 	pStack pScopeStack = &scopeStack;
-	init_list(pScopeStack, sizeof(pList));
+	init_list(pScopeStack, sizeof(List));
 
 	List resultList;
 	pList pResultList = &resultList;
-	init_list(pResultList, sizeof(Node));
+	init_list(pResultList, sizeof(Token));
 	add_tail(pScopeStack, (void*)pResultList);
 
 	pList _pCurrentList = pResultList;
 #ifdef _DEBUG
-	printf("to_nested_list: pResultList element size is %d.\n", sizeof(pNode));
+	printf("to_nested_list: pResultList element size is %d.\n", sizeof(Token));
 	printf("to_nested_list: pCurrent element size is %d.\n", _pCurrentList->elementSize);
 #endif
 
@@ -544,15 +550,20 @@ List to_nested_list(pList pOldList)
 				_pNewList = (pList)malloc(sizeof(List));
 #ifdef _DEBUG
 				printf("to_nested_list: \n\nEntering! Current stack tops at %d\n\n", _pNewList);
-				printf("Size of pNode is %d.\n", sizeof(pNode));
+				printf("Size of Node is %d.\n", sizeof(Node));
+				printf("Size of Token is %d.\n", sizeof(Token));
 #endif
-				init_list(_pNewList, sizeof(pNode));
+				init_list(_pNewList, sizeof(Token));
 				
 
 				_tempToken.type = -1;
 				_tempToken.content.number = count;
-				_tempToken.content.address = (void*)&_pNewList;
-				add_tail(_pNewList, (void*)(&_tempToken));
+				printf("~~~~~\nAdded formula count is %d.\n~~~~~\n", count);
+				_tempToken.address = (void*)_pNewList;
+				add_tail(_pCurrentList, (void*)(&_tempToken));
+				printf("to_nested_list: Address token is: ");
+				print_token(&_tempToken);
+				printf("\n");
 
 				count += 1;
 				_pCurrentList = _pNewList;
