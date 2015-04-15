@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
+
 #undef _DEBUG
 
 #ifdef _DEBUG
@@ -27,12 +29,13 @@ typedef struct List {
 typedef void(*PrintFunction)(void *);
 
 void unit_test();
-void init_list(pList pList, int size);
-void destroy_list(pList pList);
-void add_head(pList pList, void * pElement);
-void add_tail(pList pList, void * pElement);
-void print_list(pList pList, PrintFunction printFunction);
-void print_nested_list(pList, PrintFunction printFunction);
+void init_list(List* pList, int size);
+void destroy_list(List* pList);
+void add_head(List* pList, void * pElement);
+void add_tail(List* pList, void * pElement);
+void print_list(List* pList, PrintFunction printFunction);
+void print_nested_list(List* pList, PrintFunction printFunction);
+void destroy_nested_list(List* pList);
 
 /* I want to combine va_list with pseudo-generics */
 
@@ -51,9 +54,8 @@ typedef struct Token {
 void print_token(void * pToken);
 
 typedef List Stack;
-typedef Stack * pStack;
-void * get_top(pStack pStack);
-void * stack_pop(pStack pStack);
+void * get_top(const Stack* pStack);
+void * stack_pop(Stack* pStack);
 
 List read_token_list();
 
@@ -61,21 +63,26 @@ typedef struct TreeNode * pTreeNode;
 typedef struct TreeNode
 {
 	void * pElement;
-	pTreeNode pLeft, pRight;
+	pTreeNode pParent, pLeft, pRight;
 } TreeNode;
 typedef struct Tree
 {
 	pTreeNode pRoot;
 	int elementSize;
 } Tree;
-typedef Tree * pTree;
 
 
-void init_tree(pTree pTree, int size);
-void destroy_tree(pTreeNode pRoot);
-List to_nested_list(pList pOldList);
-Tree get_ast(pList pList);
+void init_tree(Tree* pTree, int size);
+pTreeNode new_treenode(int size, void* pContent);
+void set_to_left(TreeNode* pParent, TreeNode* pLeftChild);
+void set_to_right(TreeNode* pParent, TreeNode* pRughtChild);
+void destroy_tree(TreeNode* pRoot);
+void destroy_treenode(TreeNode* pOldTreeNode);
+List to_nested_list(List* pOldList);
+Tree get_ast(List* pList);
+int eval_ast(Tree* pTree);
 
+int eval_binary_operation(char operation, int x, int y);
 
 int main(int argc, char const *argv[])
 {
@@ -100,7 +107,7 @@ int main(int argc, char const *argv[])
 void unit_test()
 {
 	List myList;
-	pList pMyList = &myList;
+	List* pMyList = &myList;
 	init_list(pMyList, sizeof(int));
 	int i;
 	i = 3;
@@ -155,8 +162,7 @@ void unit_test()
 	// #undef _DEBUG
 	print_list(&refinedList, print_token);
 
-	destroy_list(pMyList);
-	destroy_list(&newList);
+
 
 	Token token1, token2;
 	token1.content.number = 3;
@@ -165,8 +171,14 @@ void unit_test()
 	print_token(&token1);
 	print_token(&token2);
 
-	printf("Size of Token is %d.\n", sizeof(Token));
+	printf("Size of Token is %lu.\n", sizeof(Token));
 
+
+	destroy_list(pMyList);
+	destroy_list(&newList);
+
+	Tree newAst = get_ast(&refinedList);
+	printf("Result is %d.\n", eval_ast(&newAst));
 }
 
 int get_precedence(char ch)
@@ -199,17 +211,17 @@ int get_type(const char ch)
 	return 8;
 }
 
-void init_list(pList pList, int size)
+void init_list(List* pList, int size)
 {
 	pList->pHead = NULL;
 	pList->pTail = NULL;
 	pList->elementSize = size;
 }
 
-void destroy_list(pList pList)
+void destroy_list(List* pList)
 {
-	pNode _pHead = pList->pHead;
-	pNode _pAuxNode;
+	Node* _pHead = pList->pHead;
+	Node* _pAuxNode;
 	while (_pHead != NULL)
 	{
 		_pAuxNode = _pHead;
@@ -218,12 +230,12 @@ void destroy_list(pList pList)
 	}
 }
 
-void add_head(pList pList, void * pElement)
+void add_head(List* pList, void * pElement)
 {
 	void * newPointer = malloc(pList->elementSize);
 	memcpy(newPointer, pElement, pList->elementSize);
 
-	pNode newNode = (pNode)malloc(sizeof(Node));
+	Node* newNode = (pNode)malloc(sizeof(Node));
 	newNode->pElement = newPointer;
 
 	newNode->pNext = pList->pHead;
@@ -244,7 +256,7 @@ void add_head(pList pList, void * pElement)
 
 }
 
-void add_tail(pList pList, void * pElement)
+void add_tail(List* pList, void * pElement)
 {
 #ifdef _DEBUG
 	printf("\nadd_tail: Element size is %d.\n", pList->elementSize);
@@ -252,7 +264,7 @@ void add_tail(pList pList, void * pElement)
 	void * newPointer = malloc(pList->elementSize);
 	memcpy(newPointer, pElement, pList->elementSize);
 
-	pNode newNode = (pNode)malloc(sizeof(Node));
+	Node* newNode = (pNode)malloc(sizeof(Node));
 	newNode->pElement = newPointer;
 
 	newNode->pPrev = pList->pTail;
@@ -277,9 +289,9 @@ void add_tail(pList pList, void * pElement)
 
 }
 
-void print_list(pList pList, PrintFunction printFunction)
+void print_list(List* pList, PrintFunction printFunction)
 {
-	pNode _pHead = pList->pHead;
+	Node* _pHead = pList->pHead;
 	while (_pHead != NULL)
 	{
 #ifdef _DEBUG
@@ -292,12 +304,12 @@ void print_list(pList pList, PrintFunction printFunction)
 	printf("\n");
 }
 
-void print_nested_list(pList pOldList, PrintFunction printFunction)
+void print_nested_list(List* pOldList, PrintFunction printFunction)
 {
-	pNode _pHead = pOldList->pHead;
+	Node* _pHead = pOldList->pHead;
 
 	Stack _tokenStack;
-	pStack _pTokenStack = &_tokenStack;
+	Stack* _pTokenStack = &_tokenStack;
 	init_list(_pTokenStack, sizeof(Token));
 
 	while (_pHead != NULL)
@@ -366,7 +378,7 @@ void print_token(void * pToken)
 	}
 }
 
-void * get_top(pStack pStack)
+void * get_top(const Stack* pStack)
 {
 	if (pStack->pHead != NULL)
 	{
@@ -378,7 +390,7 @@ void * get_top(pStack pStack)
 	}
 }
 
-void * stack_pop(pStack pStack)
+void * stack_pop(Stack* pStack)
 {
 	if (pStack->pTail != NULL)
 	{
@@ -421,7 +433,7 @@ void * stack_pop(pStack pStack)
 List read_token_list()
 {
 	List newList;
-	pList pNewList = &newList;
+	List* pNewList = &newList;
 	init_list(pNewList, sizeof(Token));
 
 
@@ -540,14 +552,14 @@ List to_nested_list(pList pOldList)
 {
 	int count = 1;
 
-	pNode _pHead = pOldList->pHead;
+	Node* _pHead = pOldList->pHead;
 
 	Stack scopeStack;
-	pStack pScopeStack = &scopeStack;
+	Stack* pScopeStack = &scopeStack;
 	init_list(pScopeStack, sizeof(pList));
 
 	List resultList;
-	pList pResultList = &resultList;
+	List* pResultList = &resultList;
 	init_list(pResultList, sizeof(Token));
 	// add_tail(pScopeStack, (void*)&pResultList);
 
@@ -575,7 +587,7 @@ List to_nested_list(pList pOldList)
 #endif
 			if (pToken->content.operation == '(')
 			{
-				_pNewList = (pList)malloc(sizeof(List));
+				_pNewList = (List*)malloc(sizeof(List));
 #ifdef _DEBUG
 				printf("to_nested_list: \n\nEntering! Current stack tops at %p\n\n", _pNewList);
 				printf("Size of Node is %d.\n", sizeof(Node));
@@ -612,7 +624,7 @@ List to_nested_list(pList pOldList)
 #ifdef _DEBUG
 				printf("Leaving!\n");
 #endif
-				_pCurrentList = *(pList*)stack_pop(pScopeStack);
+				_pCurrentList = *(List**)stack_pop(pScopeStack);
 #ifdef _DEBUG
 				printf("Leaving address is %p\n", _pCurrentList);
 
@@ -658,188 +670,208 @@ List to_nested_list(pList pOldList)
 	return resultList;
 }
 
-void init_tree(pTree pTree, int size)
+void init_tree(Tree* pTree, int size)
 {
 	pTree->pRoot = NULL;
 	pTree->elementSize = size;
 }
 
-// Tree get_ast(pList pList)
-// {
-// 	Tree newTree;
-// 	pTree pNewTree;
-// 	init_tree(pNewTree, sizeof(Token));
-// 	pTreeNode pRoot;
-// 	pTreeNode pCurrent;
-// 	pTreeNode _pAuxTreeNode;
+pTreeNode new_treenode(int size, void* pContent)
+{
+	TreeNode* pNewTreeNode;
 
-// 	Stack newStack; /* We store the address.. OMG! */
-// 	pStack pNewStack;
-// 	init_list(pNewStack, sizeof(pTreeNode));
-// 	/* Traverse the token list */
+	pNewTreeNode = (pTreeNode)malloc(size);
+	pNewTreeNode->pLeft = NULL;
+	pNewTreeNode->pRight = NULL;
+	pNewTreeNode->pParent = NULL;
+	pNewTreeNode->pElement = pContent;
 
-// 	Token _tempToken;
-// 	_tempToken.content.operation = '(';
-// 	_tempToken.type = 8;
-// 	add_head(pList, &_tempToken);
-// 	_tempToken.content.operation = ')';
-// 	add_tail(pList, &_tempToken);
+	return pNewTreeNode;
+}
 
-// 	Token _addressToken;
-// 	pNode _pNode = pList->pHead;
+void set_to_left(TreeNode* pParent, TreeNode* pLeftChild)
+{
+	pParent->pLeft = pLeftChild;
+	pLeftChild->pParent = pParent;
 
-// 	pNode _address;
-
-// 	pNode pAuxNode;
-
-// 	/* We need to store all the data of the scopes. Scopes are just stackes */
-// 	int lastPriority = 0;
-// 	int _tempPriority;
-// 	char lastOperator = ' ';
-// 	char currentOperator = ' ';
-
-// 	while (_pNode != NULL)
-// 	{
-// 		/* We need to switch to cases here! */
-// 		_tempToken = *(Token*)_pNode->pElement;
-// 		switch (_tempToken.type)
-// 		{
+}
 
 
+void set_to_right(TreeNode* pParent, TreeNode* pRightChild)
+{
+	pParent->pRight = pRightChild;
+	pRightChild->pParent = pParent;
+}
+
+/* We don't need to worry about brackets anymore */
+
+Tree get_ast(pList pList)
+{
+	Tree newTree;
+	Tree* pNewTree = &newTree;
+	init_tree(pNewTree, sizeof(Token));
+
+
+	TreeNode* pCurrent = NULL;
+	TreeNode* _pAuxTreeNode;
+
+	Stack symbolStack; /* We store the address.. OMG! */
+	Stack* pSymbolStack = &symbolStack;
+	init_list(pSymbolStack, sizeof(pTreeNode));
+
+
+	/* Traverse the token list */
+
+	Node* _pHead = pList->pHead;
+	Token _tempToken;
+
+	/* We need to store all the data of the scopes. Scopes are just stackes */
+	Tree _AuxTree;
+	while (_pHead != NULL)
+	{
+		/* We need to switch to cases here! */
+		_tempToken = *(Token*)_pHead->pElement;
+		_pAuxTreeNode = new_treenode(sizeof(Token), (void*)(pCurrent->pElement));
+
+		switch (_tempToken.type)
+		{
+			case -1:
+				
+				_AuxTree = get_ast((List*)(((Token*)(pCurrent->pElement))->address));
+				((Token*)(_pAuxTreeNode->pElement))->address = &_AuxTree;
+				if (pCurrent == NULL)
+				{
+					pCurrent = _pAuxTreeNode;
+				}
+				else
+				{
+
+					pCurrent->pRight = _pAuxTreeNode;
+					_pAuxTreeNode->pParent = pCurrent;
+				}
+				
+				break;
+
+			case 1:
+				if (pCurrent == NULL)
+				{
+					pCurrent = _pAuxTreeNode;
+				}
+				else
+				{
+
+					pCurrent->pRight = _pAuxTreeNode;
+					_pAuxTreeNode->pParent = pCurrent;
+				}
+
+				break;
+
+			case 2:
+
+				while (pCurrent->pParent != NULL && get_precedence(((Token*)(pCurrent->pElement))->content.operation) > get_precedence(_tempToken.content.operation))
+				{
+					pCurrent = pCurrent->pParent;
+				}
+
+				if (pCurrent->pParent == NULL)
+				{
+
+					set_to_left(_pAuxTreeNode, pCurrent);
+					pCurrent = _pAuxTreeNode;
+				}
+				else
+				{
+
+					if (get_precedence(((Token*)(pCurrent->pElement))->content.operation) < get_precedence(_tempToken.content.operation))
+					{
+						/* If current precedence is lower than the new precedence */
+						set_to_left(_pAuxTreeNode, pCurrent->pRight);
+						set_to_right(pCurrent, _pAuxTreeNode);
+						pCurrent = _pAuxTreeNode;
+
+					}
+					else
+					{
+						/* If current precedence is equal to the new precedence */
+						if (((Token*)(pCurrent->pElement))->content.operation == _tempToken.content.operation && get_order(_tempToken.content.operation) == -1)
+						{
+							set_to_left(_pAuxTreeNode, pCurrent->pRight);
+							set_to_right(pCurrent, _pAuxTreeNode);
+							pCurrent = _pAuxTreeNode;
+						}
+						else
+						{
+							set_to_left(pCurrent->pParent, _pAuxTreeNode);
+							set_to_right(_pAuxTreeNode, pCurrent);
+							pCurrent = _pAuxTreeNode;
+
+						}
+
+					}
+
+				}
+
+				break;
+
+			default:
+				break;
+		}
+
+	}
+
+
+	return newTree;
+}
+
+
+int eval_ast(Tree* pTree)
+{
+	TreeNode* pRoot = pTree->pRoot;
+	Token currentToken = *(Token*)(pRoot->pElement);
+	if (currentToken.type == 1) return currentToken.content.number;
+	if (currentToken.type == -1) return eval_ast((Tree*)(currentToken.address));
+	if (currentToken.type == 2)
+	{
+		Tree leftSubTree, rightSubTree;
+		init_tree(&leftSubTree, sizeof(Token));
+		leftSubTree.pRoot = pRoot->pLeft;
+		init_tree(&rightSubTree, sizeof(Token));
+		rightSubTree.pRoot = pRoot->pRight;
+		return eval_binary_operation(currentToken.content.operation, eval_ast(&leftSubTree), eval_ast(&rightSubTree));
+	}
+	return -1;
+}
+
+int eval_binary_operation(char operation, int x, int y)
+{
+	switch (operation)
+	{
+		case '+':
+			return x + y;
+			break;
+		case '-':
+			return x + y;
+			break;
+
+		case '*':
+			return x * y;
+			break;
 
 
 
+		case '\\':
+			return x / y;
+			break;
 
-// 			case 1:
-// 				_pAuxTreeNode = (pTreeNode)malloc(sizeof(TreeNode));
-// 				((Token*)(_pAuxTreeNode->pElement))->type = 1;
-// 				((Token*)(_pAuxTreeNode->pElement))->content.number = _tempToken.content.number;
-// 				if (pCurrent == NULL) /* If it's empty currently */
-// 				{
-// 					pCurrent = _pAuxTreeNode;
-// 					pRoot = pCurrent;
-// 				}
-// 				else /* If not empty */
-// 				{
+		case '%':
+			return x % y;
+			break;
 
-// 					pCurrent->pRight = _pAuxTreeNode;
-// 					pCurrent = pCurrent->pRight;
-// 				}
-// 				break;
-
-// 			case 2: /* If it's an operator */ /* We may have to store the previous priority... */
-// 				if (pCurrent == NULL)
-// 				{
-// 					/* It may be a minus sign, an unary operation. We will deal with it later... */
-
-// 				}
-// 				else /* if there is something in place */
-// 				{
-
-// 					currentOperator = ((Token*)(pCurrent->pElement))->content.operation;
-// 					_tempPriority = get_precedence(currentOperator);
-// 					if (_tempPriority > lastPriority) /* High precedence */
-// 					{
-
-// 					}
-// 					else
-// 					{
-// 						if (_tempPriority == lastPriority) /* Equal precedence */
-// 						{
-// 							if (currentOperator != lastOperator) /* Different operator */
-// 							{
-
-// 							}
-// 							else /* Same operator */
-// 							{
-// 								if (get_order(currentOperator) == 0) /* Left associative */
-// 								{
-
-// 								}
-// 								else /* Right associative */
-// 								{
-
-// 								}
-// 							}
-// 						}
-// 						else /* Low priority */
-// 						{
-
-// 						}
-// 					}
-
-
-// 					pAuxNode = pCurrent;
-
-// 					pCurrent = (Node*)malloc(sizeof(Node));
-// 					pCurrent->value.type = pAuxNode->value.type;
-// 					pCurrent->value.content.operation = pNode->value.content.operation;
-// 					pRoot = pCurrent;
-// 					pCurrent->previous = pAuxNode;
-// 				}
-// 				break;
-
-// 			case 4:
-
-// 				break;
-
-// 			case 8: /* Declare a scope for brackets */
-// 				if (pNode->value.content.operation == '(')
-// 				{
-// 					// pRoot = (Node *)malloc(sizeof(Node));
-
-// 					if (pRoot == NULL)
-// 					{
-// 						_addressToken.content.number = -1;
-// 						add_tail(pList, _addressToken);
-// 					}
-// 					else
-// 					{
-// 						_addressToken.content.number = (long)pRoot;
-// 					}
-
-// 					pRoot = NULL;
-// 					pCurrent = NULL;
-
-// 					_addressToken.content.number = -1;
-// 					// _addressToken.content.number = (long)pRoot;
-// 					add_tail(pList, _addressToken);
-// 					/* Write here the malloc instead of in a function,
-// 					To get more refined control of the program */
-
-// 					pCurrent = pRoot;
-// 					// pCurrent->value.type = 0;
-// 				}
-// 				else
-// 				{
-// 					_address = (Node *)stack_pop(pList).content.number;
-// 					if (_address == (Node *)-1)
-// 					{
-// 						pCurrent = pRoot;
-// 						/* pRoot should not change */
-// 					}
-// 					else
-// 					{
-// 						pCurrent = pRoot;
-// 					}
-// 					pRoot = 
-// 					pCurrent = pRoot;
-// 				}
-// 				break;
-// 			default:
-// 				break;
-// 		}
-
-// 		pNode = pNode->next;
-// 	}
-
-// 	pAuxNode = pList->pHead;
-// 	pList->pHead = pList->pHead->pNext;
-// 	free(pAuxNode);
-
-// 	pAuxNode = pList->pTail;
-// 	pList->pTail = pList->pTail->pPrev;
-// 	free(pAuxNode);
-
-// 	return newTree;
-// }
+		case '^':
+			return pow(x, y);
+			break;
+		default:
+			return -1;
+			break;
+	}
+}
