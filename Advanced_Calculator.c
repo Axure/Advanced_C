@@ -79,7 +79,7 @@ Tree get_ast(pList pList);
 
 int main(int argc, char const *argv[])
 {
-	#define _DEBU
+	#define _DEBUG
 	const char * _debug = "-x";
 	printf("Argument number is %d, argument 2 is %s\n", argc, argv[1]);
 	if (argc >= 2 && strcmp(argv[1], _debug) == 0)
@@ -246,7 +246,9 @@ void add_head(pList pList, void * pElement)
 
 void add_tail(pList pList, void * pElement)
 {
+#ifdef _DEBUG
 	printf("\nadd_tail: Element size is %d.\n", pList->elementSize);
+#endif
 	void * newPointer = malloc(pList->elementSize);
 	memcpy(newPointer, pElement, pList->elementSize);
 
@@ -313,7 +315,7 @@ void print_nested_list(pList pOldList, PrintFunction printFunction)
 		else
 		{
 			printf("{#%d}", ((Token*)(_pHead->pElement))->content.number);
-			add_tail(_pTokenStack, _pHead->pElement);
+			add_head(_pTokenStack, _pHead->pElement);
 		}
 		
 		_pHead = _pHead->pNext;
@@ -321,7 +323,7 @@ void print_nested_list(pList pOldList, PrintFunction printFunction)
 		printf("print_nested_list: pHead is currently at %p.\n", _pHead);
 #endif
 	}
-
+	printf("\n");
 	Token* _pToken = (Token*)stack_pop(_pTokenStack);
 	while (_pToken != NULL)
 	{
@@ -329,7 +331,7 @@ void print_nested_list(pList pOldList, PrintFunction printFunction)
 		print_nested_list((pList)_pToken->address, printFunction);
 		_pToken = (Token*)stack_pop(_pTokenStack);
 	}
-	printf("\n");
+	
 }
 
 
@@ -354,8 +356,9 @@ void print_token(void * pToken)
 			break;
 
 		case -1:
-
+#ifdef _DEBUG
 			printf("\n===\nprint_token: Address is %p.\nFormula id is %d.\n===\n", ((Token *)pToken)->address, ((Token *)pToken)->content.number);
+#endif
 			break;
 		default:
 			printf("%c", ((Token *)pToken)->content.operation);		
@@ -441,7 +444,9 @@ List read_token_list()
 		/* Be ware of the getchar() complex situation */
 		{
 			case 1: /* Receives a digit */
+#ifdef _DEBUG
 				printf("A digit! %d\n", ch - 48);
+#endif
 				if (_tempToken.type == 0)
 				{
 					_tempToken.type = 1;
@@ -462,6 +467,13 @@ List read_token_list()
 				if (_tempToken.type == 1)
 				{
 					add_tail(pNewList, &_tempToken);
+					_tempToken.type = 2;
+					_tempToken.content.operation = ch;
+					add_tail(pNewList, &_tempToken);
+					_tempToken.type = 0;
+				}
+				if (_tempToken.type == -8)
+				{
 					_tempToken.type = 2;
 					_tempToken.content.operation = ch;
 					add_tail(pNewList, &_tempToken);
@@ -498,7 +510,15 @@ List read_token_list()
 				_tempToken.type = 8;
 				_tempToken.content.operation = ch;
 				add_tail(pNewList, &_tempToken);
-				_tempToken.type = 0;
+				if (_tempToken.content.operation == '(')
+				{
+					_tempToken.type = 0;
+				}
+				else
+				{
+					_tempToken.type = -8;
+				}
+				
 				break;
 
 			default:
@@ -530,7 +550,7 @@ List to_nested_list(pList pOldList)
 	List resultList;
 	pList pResultList = &resultList;
 	init_list(pResultList, sizeof(Token));
-	add_tail(pScopeStack, (void*)&pResultList);
+	// add_tail(pScopeStack, (void*)&pResultList);
 
 	pList _pCurrentList = pResultList;
 #ifdef _DEBUG
@@ -551,6 +571,9 @@ List to_nested_list(pList pOldList)
 		printf(", type is %d, address is %p.\n", pToken->type, _pHead);
 #endif
 		if (pToken->type == 8) {
+#ifdef _DEBUG
+			printf("pToken type is %d. pToken is %c.\n", pToken->type, pToken->content.operation);
+#endif
 			if (pToken->content.operation == '(')
 			{
 				_pNewList = (pList)malloc(sizeof(List));
@@ -564,24 +587,36 @@ List to_nested_list(pList pOldList)
 
 				_tempToken.type = -1;
 				_tempToken.content.number = count;
+#ifdef _DEBUG
 				printf("~~~~~\nAdded formula count is %d.\n~~~~~\n", count);
+#endif
 				_tempToken.address = (void*)_pNewList;
 				add_tail(_pCurrentList, (void*)(&_tempToken));
+#ifdef _DEBUG
 				printf("to_nested_list: Address token is: ");
 				print_token(&_tempToken);
 				printf("\n");
 
+				printf("Entering address is %p\n", _pCurrentList);
+#endif
 				count += 1;
+				add_tail(pScopeStack, (void*)&_pCurrentList);
 				_pCurrentList = _pNewList;
-				add_tail(pScopeStack, (void*)&_pNewList);
+				
+				
 #ifdef _DEBUG
 				printf("\n\nto_nested_list: ENTERING! Current stack tops at %p\n\n", _pNewList);
 #endif
 			}
 			else
 			{
+#ifdef _DEBUG
+				printf("Leaving!\n");
+#endif
 				_pCurrentList = *(pList*)stack_pop(pScopeStack);
 #ifdef _DEBUG
+				printf("Leaving address is %p\n", _pCurrentList);
+
 				printf("\n\nto_nested_list: LEAVING! Current stack tops at %p\n\n", _pCurrentList);
 #endif
 			}
@@ -591,9 +626,10 @@ List to_nested_list(pList pOldList)
 #ifdef _DEBUG
 			printf("to_nested_list: TOKEN being added is: ");
 			print_token((pToken));
-#endif
-			
 
+			
+			printf("Current list is at %p.\n", _pCurrentList);
+#endif
 			add_tail(_pCurrentList, _pHead->pElement);
 #ifdef _DEBUG
 			printf(", type is %d, address is %p.\n", ((Token*)get_top(_pCurrentList))->type, get_top(_pCurrentList));
