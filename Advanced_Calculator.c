@@ -79,7 +79,7 @@ Tree get_ast(pList pList);
 
 int main(int argc, char const *argv[])
 {
-	#define _DEBUG
+	#define _DEBU
 	const char * _debug = "-x";
 	printf("Argument number is %d, argument 2 is %s\n", argc, argv[1]);
 	if (argc >= 2 && strcmp(argv[1], _debug) == 0)
@@ -189,7 +189,7 @@ int get_order(char ch)
 
 int get_type(const char ch)
 {
-	if (ch >= 48 && ch < 57) return 1;
+	if (ch >= 48 && ch <= 57) return 1;
 	if (ch == '+' || ch == '-' || ch == '\\' || ch == '/' || ch == '^' || ch == '*' || ch == '%') return 2;
 	if (ch == '(' || ch == ')') return 8;
 	if (1) return 4; /* Defaults to complex functions */
@@ -439,7 +439,6 @@ List read_token_list()
 #ifdef _DEBUG
 		printf("Got character %c!\n", ch);
 #endif
-
 		switch (get_type(ch))
 		/* Be ware of the getchar() complex situation */
 		{
