@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#undef _DEBUG
+#define _DEBUG
 
 #ifdef _DEBUG
 
@@ -159,7 +159,7 @@ void unit_test()
     printf("Succeessfully converted to nested list!\n");
 #endif
     print_nested_list(&refinedList, print_token);
-    // #undef _DEBUG
+    #undef _DEBUG
     print_list(&refinedList, print_token);
     
     
@@ -174,11 +174,15 @@ void unit_test()
     printf("Size of Token is %lu.\n", sizeof(Token));
     
     
-    destroy_list(pMyList);
-    destroy_list(&newList);
+
     
     Tree newAst = get_ast(&refinedList);
+    print_nested_list(&refinedList, print_token);
+    
     printf("Result is %d.\n", eval_ast(&newAst));
+
+    destroy_list(pMyList);
+    destroy_list(&newList);
 }
 
 int get_precedence(char ch)
@@ -340,7 +344,7 @@ void print_nested_list(List* pOldList, PrintFunction printFunction)
     while (_pToken != NULL)
     {
         printf("#%d: ", _pToken->content.number);
-        print_nested_list((pList)_pToken->address, printFunction);
+        print_nested_list((List*)_pToken->address, printFunction);
         _pToken = (Token*)stack_pop(_pTokenStack);
     }
     
@@ -676,11 +680,11 @@ void init_tree(Tree* pTree, int size)
     pTree->elementSize = size;
 }
 
-pTreeNode new_treenode(int size, void* pContent)
+pTreeNode new_treenode(int elementSize, void* pContent)
 {
     TreeNode* pNewTreeNode;
     printf("new_treenode Entered new tree_node.\n");
-    pNewTreeNode = (pTreeNode)malloc(size);
+    pNewTreeNode = (pTreeNode)malloc(sizeof(TreeNode));
     pNewTreeNode->pLeft = NULL;
     pNewTreeNode->pRight = NULL;
     pNewTreeNode->pParent = NULL;
@@ -688,8 +692,9 @@ pTreeNode new_treenode(int size, void* pContent)
     printf("new_treenode: pContent is now at %p.\n", pContent);
     printf("new_treenode: pTreeNode is now at %p.\n", pNewTreeNode);
     
-    pNewTreeNode->pElement = pContent;
-    
+    pNewTreeNode->pElement = malloc(sizeof(elementSize));
+    memcpy(pNewTreeNode->pElement, pContent, elementSize);
+    printf("new_treenode: pTreeNode is now at %p.\n", pNewTreeNode);
     return pNewTreeNode;
 }
 
@@ -704,6 +709,7 @@ void set_to_left(TreeNode* pParent, TreeNode* pLeftChild)
 
 void set_to_right(TreeNode* pParent, TreeNode* pRightChild)
 {
+	printf("Starting to set right.\n");
     pParent->pRight = pRightChild;
     pRightChild->pParent = pParent;
 }
@@ -712,7 +718,9 @@ void set_to_right(TreeNode* pParent, TreeNode* pRightChild)
 
 Tree get_ast(pList pList)
 {
-    
+	printf("\n===Current List is as follows===\n");
+    print_nested_list(pList, print_token);
+    printf("\n================================\n");
     Tree newTree;
     Tree* pNewTree = &newTree;
     init_tree(pNewTree, sizeof(Token));
@@ -734,6 +742,8 @@ Tree get_ast(pList pList)
     
     /* We need to store all the data of the scopes. Scopes are just stackes */
     Tree _AuxTree;
+    Tree* _pAuxTree;
+    List* _debugpList = pList;
     while (_pHead != NULL)
     {
         printf("get_ast: Pointer is now at %p.\n", _pHead);
@@ -744,23 +754,37 @@ Tree get_ast(pList pList)
         
         printf("\n===\nToken is ");
         print_token(&_tempToken);
-        printf("\n===\n");
+        printf("===\nToken type is %d.\n", _tempToken.type);
         switch (_tempToken.type)
         {
             case -1:
+
+                _AuxTree = get_ast((List*)(_tempToken.address));
+                _pAuxTree = (Tree*)malloc(sizeof(Tree));
+                memcpy(_pAuxTree, &_AuxTree, sizeof(Tree));
+                printf("\n~~~~~~~~~~~Back to  List~~~~~~~~\n");
+			    print_nested_list(pList, print_token);
+			    printf("_Auxtree Succeeded!\n");
+			    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
                 
-                _AuxTree = get_ast((List*)(((Token*)(pCurrent->pElement))->address));
-                ((Token*)(_pAuxTreeNode->pElement))->address = &_AuxTree;
+                ((Token*)(_pAuxTreeNode->pElement))->address = _pAuxTree;
+                printf("get_ast: AuxTree is at %p or %p.\n", ((Token*)(_pAuxTreeNode->pElement))->address, &_AuxTree);
+                ((Token*)(_pAuxTreeNode->pElement))->type = -1;
                 if (pCurrent == NULL)
                 {
+                	printf("get_ast: pCurrent is NULL!");
                     pCurrent = _pAuxTreeNode;
                 }
                 else
                 {
-                    
+                    printf("get_ast: pCurrent is %p!", pCurrent);
                     set_to_right(pCurrent, _pAuxTreeNode);
                 }
-                
+                printf("Break successful!\n");
+				printf("\n___________After break__________\n");
+			    print_nested_list(pList, print_token);
+			    printf("_Auxtree Succeeded!\n");
+			    printf("________________________________\n");
                 break;
                 
             case 1:
@@ -771,19 +795,23 @@ Tree get_ast(pList pList)
                 }
                 else
                 {
-                    
-                    pCurrent->pRight = _pAuxTreeNode;
-                    _pAuxTreeNode->pParent = pCurrent;
+                	printf("Root is at %p.\n Right is at %p.\n", pCurrent, _pAuxTreeNode);
+                    set_to_right(pCurrent, _pAuxTreeNode);
+                    printf("Set Succeessful!\n");
+
                 }
                 
                 break;
                 
             case 2:
-                
+                printf("get_ast: Type is 2!\n");
+                printf("get_ast: Current is at %p.\n", pCurrent);
                 while (pCurrent->pParent != NULL && get_precedence(((Token*)(pCurrent->pElement))->content.operation) > get_precedence(_tempToken.content.operation))
                 {
                     pCurrent = pCurrent->pParent;
                 }
+                printf("get_ast: Current is at %p.\n", pCurrent);
+                printf("get_ast: Aux is at %p.\n", _pAuxTreeNode);
                 
                 if (pCurrent->pParent == NULL && ((Token*)(pCurrent->pElement))->type == 1)
                 {
@@ -795,38 +823,54 @@ Tree get_ast(pList pList)
                 {
                     if (get_precedence(((Token*)(pCurrent->pElement))->content.operation) > get_precedence(_tempToken.content.operation))
                     {
-                        
+                        printf("Left is at %p.\n", _pAuxTreeNode);
                         printf("get_ast: Interesting at root!\n");
                         set_to_left(_pAuxTreeNode, pCurrent);
                         pCurrent = _pAuxTreeNode;
                     }
-                    
-                    if (get_precedence(((Token*)(pCurrent->pElement))->content.operation) < get_precedence(_tempToken.content.operation))
-                    {
-                        /* If current precedence is lower than the new precedence */
-                        set_to_left(_pAuxTreeNode, pCurrent->pRight);
-                        set_to_right(pCurrent, _pAuxTreeNode);
-                        pCurrent = _pAuxTreeNode;
-                        
-                    }
                     else
                     {
-                        /* If current precedence is equal to the new precedence */
-                        if (((Token*)(pCurrent->pElement))->content.operation == _tempToken.content.operation && get_order(_tempToken.content.operation) == -1)
-                        {
-                            set_to_left(_pAuxTreeNode, pCurrent->pRight);
-                            set_to_right(pCurrent, _pAuxTreeNode);
-                            pCurrent = _pAuxTreeNode;
-                        }
-                        else
-                        {
-                            set_to_left(pCurrent->pParent, _pAuxTreeNode);
-                            set_to_right(_pAuxTreeNode, pCurrent);
-                            pCurrent = _pAuxTreeNode;
-                            
-                        }
-                        
-                    }
+                    	// printf("get_ast: Im getting confused.\n");
+	                    if (get_precedence(((Token*)(pCurrent->pElement))->content.operation) < get_precedence(_tempToken.content.operation))
+	                    {
+	                        /* If current precedence is lower than the new precedence */
+	                        printf("Left is at %p.\n", _pAuxTreeNode);
+	                        set_to_left(_pAuxTreeNode, pCurrent->pRight);
+	                        set_to_right(pCurrent, _pAuxTreeNode);
+	                        pCurrent = _pAuxTreeNode;
+	                        
+	                    }
+	                    else
+	                    {
+	                        /* If current precedence is equal to the new precedence */
+	                        if (((Token*)(pCurrent->pElement))->content.operation == _tempToken.content.operation && get_order(_tempToken.content.operation) == -1)
+	                        {
+	                        	printf("Left is at %p.\n", _pAuxTreeNode);
+	                            set_to_left(_pAuxTreeNode, pCurrent->pRight);
+	                            set_to_right(pCurrent, _pAuxTreeNode);
+	                            pCurrent = _pAuxTreeNode;
+	                        }
+	                        else
+	                        {
+	                        	printf("Normal operators!\n");
+	                        	if (pCurrent->pParent == NULL)
+	                        	{
+	                        		set_to_left(_pAuxTreeNode, pCurrent);
+	                        		pCurrent = _pAuxTreeNode;
+	                        	}
+	                        	else
+	                        	{
+	                        		printf("Left is at %p.\n", pCurrent->pParent);
+		                            set_to_left(pCurrent->pParent, _pAuxTreeNode);
+		                            set_to_right(_pAuxTreeNode, pCurrent);
+		                            pCurrent = _pAuxTreeNode;
+	                        	}
+	                        	
+	                            
+	                        }
+	                        
+	                    }
+                	}
                     
                 }
                 
@@ -835,24 +879,37 @@ Tree get_ast(pList pList)
             default:
                 break;
         }
+        printf("Head is now at %p.\n", _pHead);
         _pHead = _pHead->pNext;
+        printf("After move, Head is now at %p.\n", _pHead);
         
     }
-    
+    printf("pCurrent is now at %p.\n", pCurrent);
     while (pCurrent->pParent != NULL)
     {
         pCurrent = pCurrent->pParent;
     }
+    printf("pCurrent is now at %p at root.\n", pCurrent);
     newTree.pRoot = pCurrent;
+    printf("\n======Returned from List========\n");
+    printf("Original pList is %p, while currently is %p.\n", _debugpList, pList);
+    print_nested_list(pList, print_token);
+    printf("\n================================\n");
     return newTree;
 }
 
 
 int eval_ast(Tree* pTree)
 {
+
     TreeNode* pRoot = pTree->pRoot;
     Token currentToken = *(Token*)(pRoot->pElement);
-    if (currentToken.type == 1) return currentToken.content.number;
+    printf("eval_ast: Current token type is %d.\n", currentToken.type);
+    if (currentToken.type == 1)
+    {
+    	printf("eval_ast: Number is %d.", currentToken.content.number);
+    	return currentToken.content.number;
+    }
     if (currentToken.type == -1) return eval_ast((Tree*)(currentToken.address));
     if (currentToken.type == 2)
     {
