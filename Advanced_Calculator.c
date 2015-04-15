@@ -34,6 +34,7 @@ void destroy_list(pList pList);
 void add_head(pList pList, void * pElement);
 void add_tail(pList pList, void * pElement);
 void print_list(pList pList, PrintFunction printFunction);
+void print_nested_list(pList, PrintFunction printFunction);
 
 /* I want to combine va_list with pseudo-generics */
 
@@ -44,6 +45,7 @@ typedef struct Token {
 	union {
 		int number;
 		char operation;
+		void * address;
 	} content;
 	int type;
 } Token;
@@ -71,8 +73,9 @@ typedef struct Tree
 typedef Tree * pTree;
 
 
-void init_tree(pTreeNode pRoot);
+void init_tree(pTree pTree, int size);
 void destroy_tree(pTreeNode pRoot);
+List to_nested_list(pList pOldList);
 Tree get_ast(pList pList);
 
 
@@ -131,6 +134,14 @@ void unit_test()
 
 	List newList = read_token_list();
 	print_list(&newList, print_token);
+
+	List refinedList;
+	refinedList = to_nested_list(&newList);
+
+#ifdef _DEBUG
+	printf("Succeessfully converted to nested list!\n");
+#endif
+	print_nested_list(&refinedList, print_token);
 
 	destroy_list(pMyList);
 	destroy_list(&newList);
@@ -253,6 +264,42 @@ void print_list(pList pList, PrintFunction printFunction)
 		
 		printFunction(_pHead->pElement);
 		_pHead = _pHead->pNext;
+	}
+	printf("\n");
+}
+
+void print_nested_list(pList pOldList, PrintFunction printFunction)
+{
+	pNode _pHead = pOldList->pHead;
+
+	Stack _tokenStack;
+	pStack _pTokenStack = &_tokenStack;
+	init_list(_pTokenStack, sizeof(Token*));
+
+	while (_pHead != NULL)
+	{
+#ifdef _DEBUG
+		printf("address %ld \n", _pHead);
+#endif
+		if (((Token*)(_pHead->pElement))->type != 16)
+		{
+			printFunction(_pHead->pElement);
+		}
+		else
+		{
+			printf("{#%d}", ((Token*)(_pHead->pElement))->content.number);
+			add_tail(_pTokenStack, _pHead->pElement);
+		}
+		
+		_pHead = _pHead->pNext;
+	}
+
+	Token* _pToken = (Token*)stack_pop(_pTokenStack);
+	while (_pToken != NULL)
+	{
+		printf("#%d: ", _pToken->content.number);
+		print_nested_list((pList)_pToken->content.address, printFunction);
+		_pToken = (Token*)stack_pop(_pTokenStack);
 	}
 	printf("\n");
 }
@@ -430,147 +477,241 @@ List read_token_list()
 	return newList;
 }
 
+List to_nested_list(pList pOldList)
+{
+	int count = 1;
+
+	pNode _pHead = pOldList->pHead;
+
+	Stack scopeStack;
+	pStack pScopeStack = &scopeStack;
+	init_list(pScopeStack, sizeof(pList));
+
+	List resultList;
+	pList pResultList = &resultList;
+	add_tail(pScopeStack, (void*)pResultList);
+
+	pList _pNewList;
+	pList _pCurrentList = pResultList;
+
+	Token _tempToken;
+
+	while (_pHead != NULL)
+	{
+		Token* pToken = (Token*)(_pHead->pElement);
+		if (pToken->type == 8) {
+			if (pToken->content.operation == '(')
+			{
+				_pNewList = (pList)malloc(sizeof(List));
+				init_list(_pNewList, sizeof(pNode));
+				
+
+				_tempToken.type = -1;
+				_tempToken.content.number = count;
+				_tempToken.content.address = (void*)&_pNewList;
+				add_tail(_pNewList, (void*)(&_tempToken));
+
+				count += 1;
+				_pCurrentList = _pNewList;
+				add_tail(pScopeStack, (void*)_pNewList);
+			}
+			else
+			{
+				_pCurrentList = (pList)stack_pop(pScopeStack);
+			}
+		}
+		else
+		{
+			add_tail(_pCurrentList, (void*)_pHead->pElement);
+			_pHead = _pHead->pNext;
+		}
+
+	}
+	return resultList;
+}
+
 void init_tree(pTree pTree, int size)
 {
 	pTree->pRoot = NULL;
 	pTree->elementSize = size;
 }
 
-Tree get_ast(pList pList)
-{
-	Tree newTree;
-	pTree pNewTree;
-	init_tree(pNewTree, sizeof(Token));
-	Node * pRoot;
-	Node * pCurrent;
+// Tree get_ast(pList pList)
+// {
+// 	Tree newTree;
+// 	pTree pNewTree;
+// 	init_tree(pNewTree, sizeof(Token));
+// 	pTreeNode pRoot;
+// 	pTreeNode pCurrent;
+// 	pTreeNode _pAuxTreeNode;
 
-	Stack newStack; /* We store the address.. OMG! */
-	pStack pNewStack;
-	init_list(pNewStack, sizeof(pTreeNode));
-	/* Traverse the token list */
+// 	Stack newStack; /* We store the address.. OMG! */
+// 	pStack pNewStack;
+// 	init_list(pNewStack, sizeof(pTreeNode));
+// 	/* Traverse the token list */
 
-	Token _tempToken;
-	_tempToken.content.operation = '(';
-	_tempToken.type = 8;
-	add_head(pList, &_tempToken);
-	_tempToken.content.operation = ')';
-	add_tail(pList, &_tempToken);
+// 	Token _tempToken;
+// 	_tempToken.content.operation = '(';
+// 	_tempToken.type = 8;
+// 	add_head(pList, &_tempToken);
+// 	_tempToken.content.operation = ')';
+// 	add_tail(pList, &_tempToken);
 
-	Token _addressToken;
-	pNode _pNode = pList->pHead;
+// 	Token _addressToken;
+// 	pNode _pNode = pList->pHead;
 
-	Node * _address;
+// 	pNode _address;
 
-	Node * pAuxNode;
+// 	pNode pAuxNode;
 
+// 	/* We need to store all the data of the scopes. Scopes are just stackes */
+// 	int lastPriority = 0;
+// 	int _tempPriority;
+// 	char lastOperator = ' ';
+// 	char currentOperator = ' ';
 
-	while (_pNode != NULL)
-	{
-		/* We need to switch to cases here! */
-		_tempToken = *(Token*)_pNode->pElement;
-		switch (_tempToken.type)
-		{
-
-
-			case 1:
-
-			
-
-			case 1:
-
-				if (pCurrent == NULL) /* If it's empty currently */
-				{
-					pCurrent = (Node*)malloc(sizeof(Node));
-					pCurrent->value.type = 1;
-					pCurrent->value.content.number = pNode->value.content.number;
-					pRoot = pCurrent;
-				}
-				else /* If not empty */
-				{
-
-				}
-				break;
-
-			case 2: /* If it's an operator */
-				if (pCurrent == NULL)
-				{
-
-				}
-				else /* if there is something in place */
-				{
+// 	while (_pNode != NULL)
+// 	{
+// 		/* We need to switch to cases here! */
+// 		_tempToken = *(Token*)_pNode->pElement;
+// 		switch (_tempToken.type)
+// 		{
 
 
-					pAuxNode = pCurrent;
 
-					pCurrent = (Node*)malloc(sizeof(Node));
-					pCurrent->value.type = pAuxNode->value.type;
-					pCurrent->value.content.operation = pNode->value.content.operation;
-					pRoot = pCurrent;
-					pCurrent->previous = pAuxNode;
-				}
-				break;
 
-			case 4:
 
-				break;
 
-			case 8: /* Declare a scope for brackets */
-				if (pNode->value.content.operation == '(')
-				{
-					// pRoot = (Node *)malloc(sizeof(Node));
+// 			case 1:
+// 				_pAuxTreeNode = (pTreeNode)malloc(sizeof(TreeNode));
+// 				((Token*)(_pAuxTreeNode->pElement))->type = 1;
+// 				((Token*)(_pAuxTreeNode->pElement))->content.number = _tempToken.content.number;
+// 				if (pCurrent == NULL) /* If it's empty currently */
+// 				{
+// 					pCurrent = _pAuxTreeNode;
+// 					pRoot = pCurrent;
+// 				}
+// 				else /* If not empty */
+// 				{
 
-					if (pRoot == NULL)
-					{
-						_addressToken.content.number = -1;
-						add_tail(pList, _addressToken);
-					}
-					else
-					{
-						_addressToken.content.number = (long)pRoot;
-					}
+// 					pCurrent->pRight = _pAuxTreeNode;
+// 					pCurrent = pCurrent->pRight;
+// 				}
+// 				break;
 
-					pRoot = NULL;
-					pCurrent = NULL;
+// 			case 2: /* If it's an operator */ /* We may have to store the previous priority... */
+// 				if (pCurrent == NULL)
+// 				{
+// 					/* It may be a minus sign, an unary operation. We will deal with it later... */
 
-					_addressToken.content.number = -1;
-					// _addressToken.content.number = (long)pRoot;
-					add_tail(pList, _addressToken);
-					/* Write here the malloc instead of in a function,
-					To get more refined control of the program */
+// 				}
+// 				else /* if there is something in place */
+// 				{
 
-					pCurrent = pRoot;
-					// pCurrent->value.type = 0;
-				}
-				else
-				{
-					_address = (Node *)stack_pop(pList).content.number;
-					if (_address == (Node *)-1)
-					{
-						pCurrent = pRoot;
-						/* pRoot should not change */
-					}
-					else
-					{
-						pCurrent = pRoot;
-					}
-					pRoot = 
-					pCurrent = pRoot;
-				}
-				break;
-			default:
-				break;
-		}
+// 					currentOperator = ((Token*)(pCurrent->pElement))->content.operation;
+// 					_tempPriority = get_precedence(currentOperator);
+// 					if (_tempPriority > lastPriority) /* High precedence */
+// 					{
 
-		pNode = pNode->next;
-	}
+// 					}
+// 					else
+// 					{
+// 						if (_tempPriority == lastPriority) /* Equal precedence */
+// 						{
+// 							if (currentOperator != lastOperator) /* Different operator */
+// 							{
 
-	pAuxNode = pList->head;
-	pList->head = pList->head->next;
-	free(pAuxNode);
+// 							}
+// 							else /* Same operator */
+// 							{
+// 								if (get_order(currentOperator) == 0) /* Left associative */
+// 								{
 
-	pAuxNode = pList->tail;
-	pList->tail = pList->tail->previous;
-	free(pAuxNode);
+// 								}
+// 								else /* Right associative */
+// 								{
 
-	return newTree;
-}
+// 								}
+// 							}
+// 						}
+// 						else /* Low priority */
+// 						{
+
+// 						}
+// 					}
+
+
+// 					pAuxNode = pCurrent;
+
+// 					pCurrent = (Node*)malloc(sizeof(Node));
+// 					pCurrent->value.type = pAuxNode->value.type;
+// 					pCurrent->value.content.operation = pNode->value.content.operation;
+// 					pRoot = pCurrent;
+// 					pCurrent->previous = pAuxNode;
+// 				}
+// 				break;
+
+// 			case 4:
+
+// 				break;
+
+// 			case 8: /* Declare a scope for brackets */
+// 				if (pNode->value.content.operation == '(')
+// 				{
+// 					// pRoot = (Node *)malloc(sizeof(Node));
+
+// 					if (pRoot == NULL)
+// 					{
+// 						_addressToken.content.number = -1;
+// 						add_tail(pList, _addressToken);
+// 					}
+// 					else
+// 					{
+// 						_addressToken.content.number = (long)pRoot;
+// 					}
+
+// 					pRoot = NULL;
+// 					pCurrent = NULL;
+
+// 					_addressToken.content.number = -1;
+// 					// _addressToken.content.number = (long)pRoot;
+// 					add_tail(pList, _addressToken);
+// 					/* Write here the malloc instead of in a function,
+// 					To get more refined control of the program */
+
+// 					pCurrent = pRoot;
+// 					// pCurrent->value.type = 0;
+// 				}
+// 				else
+// 				{
+// 					_address = (Node *)stack_pop(pList).content.number;
+// 					if (_address == (Node *)-1)
+// 					{
+// 						pCurrent = pRoot;
+// 						/* pRoot should not change */
+// 					}
+// 					else
+// 					{
+// 						pCurrent = pRoot;
+// 					}
+// 					pRoot = 
+// 					pCurrent = pRoot;
+// 				}
+// 				break;
+// 			default:
+// 				break;
+// 		}
+
+// 		pNode = pNode->next;
+// 	}
+
+// 	pAuxNode = pList->pHead;
+// 	pList->pHead = pList->pHead->pNext;
+// 	free(pAuxNode);
+
+// 	pAuxNode = pList->pTail;
+// 	pList->pTail = pList->pTail->pPrev;
+// 	free(pAuxNode);
+
+// 	return newTree;
+// }
