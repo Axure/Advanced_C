@@ -167,7 +167,7 @@ void unit_test()
     Token token1, token2;
     token1.content.number = 3;
     token1.type = 1;
-    memcpy(&token2, &token1, sizeof(Token));
+    memmove(&token2, &token1, sizeof(Token));
     print_token(&token1);
     print_token(&token2);
     
@@ -178,7 +178,7 @@ void unit_test()
     
     Tree newAst = get_ast(&refinedList);
     print_nested_list(&refinedList, print_token);
-    
+
     printf("Result is %d.\n", eval_ast(&newAst));
 
     destroy_list(pMyList);
@@ -237,7 +237,7 @@ void destroy_list(List* pList)
 void add_head(List* pList, void * pElement)
 {
     void * newPointer = malloc(pList->elementSize);
-    memcpy(newPointer, pElement, pList->elementSize);
+    memmove(newPointer, pElement, pList->elementSize);
     
     Node* newNode = (pNode)malloc(sizeof(Node));
     newNode->pElement = newPointer;
@@ -266,7 +266,7 @@ void add_tail(List* pList, void * pElement)
     printf("\nadd_tail: Element size is %d.\n", pList->elementSize);
 #endif
     void * newPointer = malloc(pList->elementSize);
-    memcpy(newPointer, pElement, pList->elementSize);
+    memmove(newPointer, pElement, pList->elementSize);
     
     Node* newNode = (pNode)malloc(sizeof(Node));
     newNode->pElement = newPointer;
@@ -682,20 +682,36 @@ void init_tree(Tree* pTree, int size)
 
 pTreeNode new_treenode(int elementSize, void* pContent)
 {
-    TreeNode* pNewTreeNode;
-    printf("new_treenode Entered new tree_node.\n");
-    pNewTreeNode = (pTreeNode)malloc(sizeof(TreeNode));
+    // TreeNode* pNewTreeNode;
+    // printf("new_treenode Entered new tree_node.\n");
+    // pNewTreeNode = (pTreeNode)malloc(sizeof(TreeNode));
+    // pNewTreeNode->pLeft = NULL;
+    // pNewTreeNode->pRight = NULL;
+    // pNewTreeNode->pParent = NULL;
+    
+    // printf("new_treenode: pContent is now at %p.\n", pContent);
+    // printf("new_treenode: pTreeNode is now at %p.\n", pNewTreeNode);
+    
+    // pNewTreeNode->pElement = malloc(sizeof(elementSize));
+    // memmove(pNewTreeNode->pElement, pContent, elementSize);
+    // printf("new_treenode: pTreeNode is now at %p.\n new_treenode: New token type is %d, content is ", pNewTreeNode, ((Token*)(pNewTreeNode->pElement))->type);
+    // print_token((Token*)(pNewTreeNode->pElement));
+    // return pNewTreeNode;
+
+
+    void * newPointer = malloc(elementSize);
+    memmove(newPointer, pContent, elementSize);
+    
+    TreeNode* pNewTreeNode = (TreeNode*)malloc(sizeof(TreeNode));
+    pNewTreeNode->pElement = newPointer;
+
+    pNewTreeNode->pParent = NULL;
     pNewTreeNode->pLeft = NULL;
     pNewTreeNode->pRight = NULL;
-    pNewTreeNode->pParent = NULL;
-    
-    printf("new_treenode: pContent is now at %p.\n", pContent);
-    printf("new_treenode: pTreeNode is now at %p.\n", pNewTreeNode);
-    
-    pNewTreeNode->pElement = malloc(sizeof(elementSize));
-    memcpy(pNewTreeNode->pElement, pContent, elementSize);
-    printf("new_treenode: pTreeNode is now at %p.\n", pNewTreeNode);
+
     return pNewTreeNode;
+    
+
 }
 
 void set_to_left(TreeNode* pParent, TreeNode* pLeftChild)
@@ -738,6 +754,7 @@ Tree get_ast(pList pList)
     
     Node* _pHead = pList->pHead;
     Token _tempToken;
+    Token _cmpToken;
     
     
     /* We need to store all the data of the scopes. Scopes are just stackes */
@@ -751,17 +768,21 @@ Tree get_ast(pList pList)
         _tempToken = *(Token*)_pHead->pElement;
 
         _pAuxTreeNode = new_treenode(sizeof(Token), _pHead->pElement);
-        
-        printf("\n===\nToken is ");
+        _cmpToken = *(Token*)(_pAuxTreeNode->pElement);
+        printf("\n\n===Token is ");
         print_token(&_tempToken);
         printf("===\nToken type is %d.\n", _tempToken.type);
+		printf("===Compared Token is ");
+        print_token(&_cmpToken);
+        printf("===\nToken type is %d.\n", _tempToken.type);
+        printf("If it's 0 they are the same: %d.\n\n", memcmp(&_tempToken, &_cmpToken, sizeof(Token)));
         switch (_tempToken.type)
         {
             case -1:
 
                 _AuxTree = get_ast((List*)(_tempToken.address));
                 _pAuxTree = (Tree*)malloc(sizeof(Tree));
-                memcpy(_pAuxTree, &_AuxTree, sizeof(Tree));
+                memmove(_pAuxTree, &_AuxTree, sizeof(Tree));
                 printf("\n~~~~~~~~~~~Back to  List~~~~~~~~\n");
 			    print_nested_list(pList, print_token);
 			    printf("_Auxtree Succeeded!\n");
@@ -901,10 +922,12 @@ Tree get_ast(pList pList)
 
 int eval_ast(Tree* pTree)
 {
-
+	/* The project is getting chaos. */
     TreeNode* pRoot = pTree->pRoot;
     Token currentToken = *(Token*)(pRoot->pElement);
-    printf("eval_ast: Current token type is %d.\n", currentToken.type);
+    printf("\n=========\neval_ast: Current token type is %d.\nCurrent token is: ", currentToken.type);
+    print_token(&currentToken);
+    printf("\n===================\n");
     if (currentToken.type == 1)
     {
     	printf("eval_ast: Number is %d.", currentToken.content.number);
