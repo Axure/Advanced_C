@@ -882,8 +882,8 @@ Tree get_ast(pList pList)
 								else
 								{
 									printf("Left is at %p.\n", pCurrent->pParent);
-									set_to_left(pCurrent->pParent, _pAuxTreeNode);
-									set_to_right(_pAuxTreeNode, pCurrent);
+									set_to_right(pCurrent->pParent, _pAuxTreeNode);
+									set_to_left(_pAuxTreeNode, pCurrent);
 									pCurrent = _pAuxTreeNode;
 								}
 								
@@ -925,9 +925,9 @@ int eval_ast(Tree* pTree)
 	/* The project is getting chaos. */
 	TreeNode* pRoot = pTree->pRoot;
 	Token currentToken = *(Token*)(pRoot->pElement);
-	printf("\n=========\neval_ast: Current token type is %d.\nCurrent token is: ", currentToken.type);
+	printf("\n\n=========\neval_ast: Current token type is %d.\nCurrent token is: ", currentToken.type);
 	print_token(&currentToken);
-	printf("\n===================\n");
+	printf("\n===================\n\n");
 	if (currentToken.type == 1)
 	{
 		printf("eval_ast: Number is %d.", currentToken.content.number);
@@ -941,6 +941,7 @@ int eval_ast(Tree* pTree)
 		leftSubTree.pRoot = pRoot->pLeft;
 		init_tree(&rightSubTree, sizeof(Token));
 		rightSubTree.pRoot = pRoot->pRight;
+		printf("eval_ast: We are doing %d %c %d = %d.\n", eval_ast(&leftSubTree), currentToken.content.operation, eval_ast(&rightSubTree), eval_binary_operation(currentToken.content.operation, eval_ast(&leftSubTree), eval_ast(&rightSubTree)));
 		return eval_binary_operation(currentToken.content.operation, eval_ast(&leftSubTree), eval_ast(&rightSubTree));
 	}
 	return -1;
@@ -954,7 +955,7 @@ int eval_binary_operation(char operation, int x, int y)
 			return x + y;
 			break;
 		case '-':
-			return x + y;
+			return x - y;
 			break;
 			
 		case '*':
