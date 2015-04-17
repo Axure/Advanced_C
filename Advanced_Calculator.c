@@ -9,6 +9,7 @@
 
 #endif
 
+
 int get_precedence(const char ch);
 int get_order(const char ch);
 int get_type(const char ch);
@@ -46,6 +47,7 @@ typedef struct Token {
 	union {
 		int number;
 		char operation;
+		struct Function* function;
 	} content;
 	void * address;
 	int type;
@@ -83,6 +85,60 @@ Tree get_ast(List* pList);
 int eval_ast(Tree* pTree);
 
 int eval_binary_operation(char operation, int x, int y);
+
+typedef struct String
+{
+	int length;
+	List chars;
+};
+
+/* A road to robust and comprehensible memory management. */
+void init_string(String* pString);
+void eat(String* pString, char food);
+void append_to(String* pString, char food);
+
+void init_string(String* pString)
+{
+	pString->length = 0;
+	init_list(&(pString->chars), sizeof(char)); /* Is there any memory management failure/mispratice here? */
+}
+void append_to(String* pString, char food)
+{
+	++(pString->length);
+	add_tail(&(pString->chars), &food);
+}
+
+/* Add a module for parsing functions */
+/* The crucial part is to know the states and how they transfer to each other.
+Once tat is know, we can assert that almost everything is done. */
+typedef struct Function
+{
+	String name;
+	List paramList;
+
+} Function;
+
+/* Rewrite expression tokenizer in this way! */
+/* And many parsers also/as well */
+void function_tokenizer(Function* pFunction, char init)
+{
+	/* The scope is not right... */
+	/* But we can force it to be right! */
+	char ch;
+	append_to(&(pFunction->name), init);
+
+	while (EOF != (ch = getchar()) && ch != '\n')
+	{
+
+	}
+}
+
+int eval_function(Function* pFunction, List* paramList);
+
+int eval_function(Function* pFunction, List* paramList)
+{
+
+}
 
 int main(int argc, char const *argv[])
 {
@@ -159,7 +215,7 @@ void unit_test()
 	printf("Succeessfully converted to nested list!\n");
 #endif
 	print_nested_list(&refinedList, print_token);
-	#undef _DEBUG
+
 	print_list(&refinedList, print_token);
 	
 	
@@ -448,7 +504,7 @@ List read_token_list()
 	
 	
 	
-	while((EOF != (ch = getchar()) && ch != '\n'))
+	while ((EOF != (ch = getchar()) && ch != '\n'))
 	{
 		
 		/* Things are a little bit different from the polynomial case, as you have to record all the chars. */
@@ -980,3 +1036,5 @@ int eval_binary_operation(char operation, int x, int y)
 			break;
 	}
 }
+
+
