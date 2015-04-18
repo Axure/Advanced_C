@@ -3,12 +3,13 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define _DEBUG
+#undef _DEBUG
 
 #ifdef _DEBUG
 
 #endif
 
+/* How to write the source code file so that the designated structure is already explicit in the text? */
 
 int get_precedence(const char ch);
 int get_order(const char ch);
@@ -34,7 +35,7 @@ void init_list(List* pList, int size);
 void destroy_list(List* pList);
 void add_head(List* pList, void * pElement);
 void add_tail(List* pList, void * pElement);
-void print_list(List* pList, PrintFunction printFunction);
+void print_list(const List* pList, PrintFunction printFunction);
 void print_nested_list(List* pList, PrintFunction printFunction);
 void destroy_nested_list(List* pList);
 
@@ -90,7 +91,7 @@ typedef struct String
 {
 	int length;
 	List chars;
-};
+} String;
 
 /* A road to robust and comprehensible memory management. */
 void init_string(String* pString);
@@ -120,18 +121,119 @@ typedef struct Function
 
 /* Rewrite expression tokenizer in this way! */
 /* And many parsers also/as well */
-void function_tokenizer(Function* pFunction, char init)
+Function function_tokenizer(char init)
 {
 	/* The scope is not right... */
 	/* But we can force it to be right! */
 	char ch;
+	Function resultFunction;
+	Function* pFunction = &resultFunction;
+	/* !!!- We should not directly instaniate the address pointed to by a pointer pointed to by a pointer.
+	Instead, we should new a pointer and let the secondary pointer point to it... -!!! */
+	/* String functionName;
+	init_string(&functionName);
+	append_to(&functionName, init); */
+	init_string(&(pFunction->name));
 	append_to(&(pFunction->name), init);
 
-	while (EOF != (ch = getchar()) && ch != '\n')
+	/* Note that the passed in pFunction is already initialized in its own right/life,
+	so that pFunction->name is already a valid thing...
+	Only when the thing is newed inside the function and then returned
+	do we need to care the about the memory problems. */
+
+	int ifBefore = 0;
+
+	/* How should we manage the memory?
+	New an element?
+	Renew an element?
+	If we want it to be defined inside a function but usable outside the function?
+	*/
+
+	String parameterName;
+	String* pParameterName = &parameterName;
+
+	while (EOF != (ch = getchar()) && ch != ')')
 	{
+		printf("We are getting %c!\n", ch);
+		if (ch == '(')
+		{
+			init_string(pParameterName);
+			printf("We are not before anymore.!\n");
+			ifBefore = 1;
+
+			
+		}
+		else
+		{
+			/* Parse the parameter list! */
+			if (ifBefore == 0)
+			{
+				printf("We are appending name!\n");
+				append_to(&(pFunction->name), ch);
+				printf("We have appended name!\n");
+			}
+			else
+			{
+
+				if (ch == ',')
+				{
+					/* We need to think twice about the memory structure and management here */
+					add_tail(&(pFunction->paramList), pParameterName);
+					init_string(pParameterName);
+
+
+					/* Append, renew */
+				}
+				else
+				{
+					append_to(pParameterName, ch);
+
+					/* eat */
+				}
+			}
+			
+			/* Append the last parameter... */
+			/* Should we place the parameters in a search tree or linked list?
+			or a hash table? */
+
+		}
+
 
 	}
+	append_to(pParameterName, ch);
+
+	return resultFunction;
 }
+
+void print_char(void* pCh)
+{
+	printf("%c", *(char*)pCh);
+}
+
+void print_string(const String* pString)
+{
+	print_list(&(pString->chars), print_char);
+}
+
+void print_function(const Function* pFunction)
+{
+	print_string(&(pFunction->name));
+	print_string(&(pFunction->name));
+	printf("(");
+	Node* pParams = (Node*)pFunction->paramList.pHead;
+	while (pParams != NULL)
+	{
+		print_string((String*)pParams->pElement);
+		if (pParams->pNext != NULL)
+		{
+			printf(",");
+		}
+		pParams = pParams->pNext;
+	}
+	printf(")");
+}
+
+
 
 int eval_function(Function* pFunction, List* paramList);
 
@@ -142,7 +244,7 @@ int eval_function(Function* pFunction, List* paramList)
 
 int main(int argc, char const *argv[])
 {
-#define _DEBU
+
 	const char * _debug = "-x";
 	printf("Argument number is %d, argument 2 is %s\n", argc, argv[1]);
 	if (argc >= 2 && strcmp(argv[1], _debug) == 0)
@@ -160,7 +262,41 @@ int main(int argc, char const *argv[])
 }
 
 
-void unit_test()
+/* TODO: add exception check, like empty string? */
+void unit_test_for_string();
+void unit_test_for_string()
+{
+	String myString;
+	init_string(&myString);
+	append_to(&myString, 'T');
+	append_to(&myString, 'F');
+	append_to(&myString, 'W');
+	append_to(&myString, 'S');
+	print_string(&myString);
+}
+
+void unit_test_for_function();
+void unit_test_for_function()
+{
+	Function myFunction;
+	myFunction = function_tokenizer('c');
+	print_function(&myFunction);
+}
+
+void unit_test_for_tokenizer();
+void unit_test_for_tokenizer()
+{
+
+}
+
+void unit_test_for_parser();
+void unit_test_for_parser()
+{
+
+}
+
+void unit_test_for_calculator();
+void unit_test_for_calculator()
 {
 	List myList;
 	List* pMyList = &myList;
@@ -239,6 +375,12 @@ void unit_test()
 
 	destroy_list(pMyList);
 	destroy_list(&newList);
+}
+
+void unit_test()
+{
+	unit_test_for_string();
+	unit_test_for_function();
 }
 
 int get_precedence(char ch)
@@ -349,7 +491,7 @@ void add_tail(List* pList, void * pElement)
 	
 }
 
-void print_list(List* pList, PrintFunction printFunction)
+void print_list(const List* pList, PrintFunction printFunction)
 {
 	Node* _pHead = pList->pHead;
 	while (_pHead != NULL)
@@ -361,7 +503,6 @@ void print_list(List* pList, PrintFunction printFunction)
 		printFunction(_pHead->pElement);
 		_pHead = _pHead->pNext;
 	}
-	printf("\n");
 }
 
 void print_nested_list(List* pOldList, PrintFunction printFunction)
@@ -625,7 +766,7 @@ List to_nested_list(pList pOldList)
 	
 	pList _pCurrentList = pResultList;
 #ifdef _DEBUG
-	printf("to_nested_list: pResultList element size is %d.\n", sizeof(Token));
+	printf("to_nested_list: pResultList element size is %lu.\n", sizeof(Token));
 	printf("to_nested_list: pCurrent element size is %d.\n", _pCurrentList->elementSize);
 #endif
 	
@@ -650,8 +791,8 @@ List to_nested_list(pList pOldList)
 				_pNewList = (List*)malloc(sizeof(List));
 #ifdef _DEBUG
 				printf("to_nested_list: \n\nEntering! Current stack tops at %p\n\n", _pNewList);
-				printf("Size of Node is %d.\n", sizeof(Node));
-				printf("Size of Token is %d.\n", sizeof(Token));
+				printf("Size of Node is %lu.\n", sizeof(Node));
+				printf("Size of Token is %lu.\n", sizeof(Token));
 #endif
 				init_list(_pNewList, sizeof(Token));
 				
