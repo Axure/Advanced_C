@@ -6,13 +6,14 @@ using namespace std;
 std::map<std::string, int> monthMap;
 /* Clang doesn't support C++0x style initializer yet! */
 
-int with_the_day(int month, int day)
+int with_the_day(int month, int day, int year)
 {
-	if (month >= 3) return 1;
-	if (month == 1) return -1;
+	if (!(year % 4 == 0 && !(year % 100 == 0 ^ year % 400 == 0))) return 0;
+	if (month >= 3) return -1;
+	if (month == 1) return 0;
 	if (month == 2)
 	{
-		if (day <= 28) return -1;
+		if (day <= 28) return 0;
 		if (day == 29) return 0;
 	}
 	return 0;
@@ -166,6 +167,10 @@ int main(int argc, char const *argv[])
 
 		result = count_the_day_between(year, year_);
 
+		std::cout << "Case #" << i + 1 << ": " << result << std::endl;
+		result += with_the_day(month, day, year);
+		printf("%d, %d\n", with_the_day(month, day, year_), with_the_day(month_, day_, year_));
+		result += with_the_day(month_, day_, year_);
 		std::cout << "Case #" << i + 1 << ": " << result << std::endl;
 
 	}
