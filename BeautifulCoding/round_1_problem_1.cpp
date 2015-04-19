@@ -39,7 +39,9 @@ int lowest_four(int year)
 int hightest_four(int year)
 {
 	if (year % 4 == 0) return year;
+#ifdef _DEBUG
 	printf("%d\n", (year - 1) % 4 == 0);
+#endif
 	if ((year - 1) % 4 == 0) return year - 1;
 	if ((year - 2) % 4 == 0) return year - 2;
 	if ((year - 3) % 4 == 0) return year - 3;
@@ -78,12 +80,18 @@ int count_the_day_between(int start, int end)
 	// solution = 4 - (100 but not 400)
 
 	int num4 = (hightest_four(end) - lowest_four(start)) / 4 + 1;
+#ifdef _DEBUG
 	std::printf("%d, %d, %d\n", hightest_four(end), lowest_four(start), (hightest_four(end) - lowest_four(start)) / 4);
 	std::cout << "Num 4 is: " << num4 << std::endl;
+#endif
 	int num100 = (highest_hundred(end) - lowest_hundred(start)) / 100 + 1;
+#ifdef _DEBUG
 	std::cout << "Num 100 is: " << num100 << std::endl;
+#endif
 	int num400 = (highest_4hundred(end) - lowest_4hundred(start)) / 400 + 1;
+#ifdef _DEBUG
 	std::cout << "Num 400 is: " << num400 << std::endl;
+#endif
 	// Doing primary school math Olympiad with the computer LOL
 	return num4 - num100 + num400;
 }
@@ -146,8 +154,9 @@ int main(int argc, char const *argv[])
 
 	std::string sMonth_;
 	char ssMonth_[10];
-
+#ifdef _DEBUG
 	test();
+#endif
 
 	scanf("%d", &T);
 
@@ -158,19 +167,27 @@ int main(int argc, char const *argv[])
 		std::scanf("%s %d, %d", ssMonth, &day, &year);
 		sMonth = ssMonth;
 		month = monthMap[sMonth];
+#ifdef _DEBUG
 		std::cout << sMonth << day << " " << year << std::endl;
+#endif
 
 		std::scanf("%s %d, %d", ssMonth_, &day_, &year_);
 		sMonth_ = ssMonth_;
 		month_ = monthMap[sMonth_];
+#ifdef _DEBUG
 		std::cout << sMonth_ << day_ << " " << year_  << std::endl;
-
+#endif
 		result = count_the_day_between(year, year_);
-
+#ifdef _DEBUG
 		std::cout << "Case #" << i + 1 << ": " << result << std::endl;
+#endif		
 		result += with_the_day(month, day, year);
+#ifdef _DEBUG
 		printf("%d, %d\n", with_the_day(month, day, year_), with_the_day(month_, day_, year_));
+#endif
 		result += with_the_day(month_, day_, year_);
+		if (year == year_ && count_the_day_between(year, year) == 1 && with_the_day(month_, day_, year_) == -1) result += 1;
+		if (year == year_ && count_the_day_between(year, year) == 1 && with_the_day(month, day, year) == 0) result -= 1;
 		std::cout << "Case #" << i + 1 << ": " << result << std::endl;
 
 	}
