@@ -29,41 +29,42 @@ bool have_the_day(int year)
 int lowest_four(int year)
 {
 	if (year % 4 == 0) return year;
-	if (year + 1 % 4 == 0) return year + 1;
-	if (year + 2 % 4 == 0) return year + 2;
-	if (year + 3 % 4 == 0) return year + 3;
+	if ((year + 1) % 4 == 0) return year + 1;
+	if ((year + 2) % 4 == 0) return year + 2;
+	if ((year + 3) % 4 == 0) return year + 3;
 	return 0;
 }
 
 int hightest_four(int year)
 {
 	if (year % 4 == 0) return year;
-	if (year - 1 % 4 == 0) return year - 1;
-	if (year - 2 % 4 == 0) return year - 2;
-	if (year - 3 % 4 == 0) return year - 3;
+	printf("%d\n", (year - 1) % 4 == 0);
+	if ((year - 1) % 4 == 0) return year - 1;
+	if ((year - 2) % 4 == 0) return year - 2;
+	if ((year - 3) % 4 == 0) return year - 3;
 	return 0;
 }
 
 int lowest_hundred(int year)
 {
-	std::printf("lowest hunred is %d\n", (year % 100 == 0) ? year : year - year % 100);
-	return (year % 100 == 0) ? year : year - year % 100;
+	// std::printf("lowest hunred is %d\n", (year % 100 == 0) ? year : year - year % 100);
+	return (year % 100 == 0) ? year : year + 100 - year % 100;
 }
 
 int highest_hundred(int year)
 {
-	std::printf("highest hunred is %d\n", (year % 100 == 0) ? year : year + 100 - year % 100);
-	return (year % 100 == 0) ? year : year + 100 - year % 100;
+	// std::printf("highest hunred is %d\n", (year % 100 == 0) ? year : year + 100 - year % 100);
+	return (year % 100 == 0) ? year : year - year % 100;
 }
 
 int lowest_4hundred(int year)
 {
-	return (year % 400 == 0) ? year : year - year % 400;
+	return (year % 400 == 0) ? year : year + 400 - year % 400;
 }
 
 int highest_4hundred(int year)
 {
-	return (year % 400 == 0) ? year : year + 400 - year % 400;
+	return (year % 400 == 0) ? year : year - year % 400;
 }
 
 int count_the_day_between(int start, int end)
@@ -76,11 +77,12 @@ int count_the_day_between(int start, int end)
 	// solution = 4 - (100 but not 400)
 
 	int num4 = (hightest_four(end) - lowest_four(start)) / 4 + 1;
-	cout << "Num 4 is: " << num4 << std::endl;
+	std::printf("%d, %d, %d\n", hightest_four(end), lowest_four(start), (hightest_four(end) - lowest_four(start)) / 4);
+	std::cout << "Num 4 is: " << num4 << std::endl;
 	int num100 = (highest_hundred(end) - lowest_hundred(start)) / 100 + 1;
-	cout << "Num 100 is: " << num100 << std::endl;
+	std::cout << "Num 100 is: " << num100 << std::endl;
 	int num400 = (highest_4hundred(end) - lowest_4hundred(start)) / 400 + 1;
-	cout << "Num 400 is: " << num400 << std::endl;
+	std::cout << "Num 400 is: " << num400 << std::endl;
 	// Doing primary school math Olympiad with the computer LOL
 	return num4 - num100 + num400;
 }
@@ -155,14 +157,14 @@ int main(int argc, char const *argv[])
 		std::scanf("%s %d, %d", ssMonth, &day, &year);
 		sMonth = ssMonth;
 		month = monthMap[sMonth];
-		// std::cout << sMonth << month << std::endl;
+		std::cout << sMonth << day << " " << year << std::endl;
 
 		std::scanf("%s %d, %d", ssMonth_, &day_, &year_);
 		sMonth_ = ssMonth_;
 		month_ = monthMap[sMonth_];
-		// std::cout << sMonth_ << month_ << std::endl;
+		std::cout << sMonth_ << day_ << " " << year_  << std::endl;
 
-		result = count_the_day_between(year, year);
+		result = count_the_day_between(year, year_);
 
 		std::cout << "Case #" << i + 1 << ": " << result << std::endl;
 
