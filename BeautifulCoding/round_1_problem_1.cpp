@@ -26,9 +26,43 @@ bool have_the_day(int year)
 	return (year % 4 == 0 && !(year % 100 == 0 ^ year % 400 == 0));
 }
 
+int lowest_four(int year)
+{
+	if (year % 4 == 0) return year;
+	if (year + 1 % 4 == 0) return year + 1;
+	if (year + 2 % 4 == 0) return year + 2;
+	if (year + 3 % 4 == 0) return year + 3;
+	return 0;
+}
+
+int hightest_four(int year)
+{
+	if (year % 4 == 0) return year;
+	if (year - 1 % 4 == 0) return year - 1;
+	if (year - 2 % 4 == 0) return year - 2;
+	if (year - 3 % 4 == 0) return year - 3;
+	return 0;
+}
+
+int lowest_hundred(int year)
+{
+	return (year % 100 == 0) ? year : year - year % 100;
+}
+
+int highest_hundred(int year)
+{
+	return (year % 100 == 0) ? year : year + 100 - year % 100;
+}
+
 int count_the_day_between(int start, int end)
 {
 	int _raw = (end - start) / 4;
+	if (have_the_day(start) || have_the_day(end)) _raw += 1;
+	return _raw;
+
+	// Maybe we should think more mathematically
+
+
 
 	// Doing primary school math Olympiad with the computer LOL
 }
