@@ -6,6 +6,32 @@ using namespace std;
 std::map<std::string, int> monthMap;
 /* Clang doesn't support C++0x style initializer yet! */
 
+int with_the_day(int month, int day)
+{
+	if (month >= 3) return 1;
+	if (month == 1) return -1;
+	if (month == 2)
+	{
+		if (day <= 28) return -1;
+		if (day == 29) return 0;
+	}
+	return 0;
+}
+
+// We should write a good version after passing the contest.
+
+bool have_the_day(int year)
+{
+	// std::cout << std::endl << "in is " << !(year % 100 == 0 ^ year % 400 == 0) << std::endl;
+	return (year % 4 == 0 && !(year % 100 == 0 ^ year % 400 == 0));
+}
+
+int count_the_day_between(int start, int end)
+{
+	int _raw = (end - start) / 4;
+
+	// Doing primary school math Olympiad with the computer LOL
+}
 
 // class Date
 // {
@@ -32,6 +58,11 @@ std::map<std::string, int> monthMap;
 
 // }
 
+void test()
+{
+	std::cout << have_the_day(2000) << have_the_day(1919) << have_the_day(1900) << have_the_day(1996);
+}
+
 int main(int argc, char const *argv[])
 {
 
@@ -52,8 +83,16 @@ int main(int argc, char const *argv[])
 
 	
 	int T, day, year, month;
+	int day_, year_, month_;
+
 	std::string sMonth;
 	char ssMonth[10];
+
+
+	std::string sMonth_;
+	char ssMonth_[10];
+
+	test();
 
 	scanf("%d", &T);
 
@@ -63,8 +102,17 @@ int main(int argc, char const *argv[])
 		sMonth = ssMonth;
 		month = monthMap[sMonth];
 		std::cout << sMonth << month;
+
+		std::scanf("%s %d, %d", ssMonth_, &day_, &year_);
+		sMonth_ = ssMonth_;
+		month_ = monthMap[sMonth_];
+		std::cout << sMonth_ << month_;
+
+
+
 	}
 
 
 	return 0;
 }
+
