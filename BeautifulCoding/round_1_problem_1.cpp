@@ -7,30 +7,30 @@ std::map<std::string, int> monthMap;
 /* Clang doesn't support C++0x style initializer yet! */
 
 
-class Date
-{
-private:
+// class Date
+// {
+// private:
 
-public:
-	Date();
-	Date(std::string string);
-	~Date();
-};
+// public:
+// 	Date();
+// 	Date(std::string string);
+// 	~Date();
+// };
 
-Date::Date()
-{
+// Date::Date()
+// {
 
-}
+// }
 
-Date::Date(std::string string)
-{
-	// sscanf("string");
-}
+// Date::Date(std::string string)
+// {
+// 	// sscanf("string");
+// }
 
-Date::~Date()
-{
+// Date::~Date()
+// {
 
-}
+// }
 
 int main(int argc, char const *argv[])
 {
