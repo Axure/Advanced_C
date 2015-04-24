@@ -149,6 +149,10 @@ Function function_tokenizer(char init)
 	If we want it to be defined inside a function but usable outside the function?
 	*/
 
+	List parameterList;
+	List* pParameterList = &parameterList;
+	init_list(pParameterList, sizeof(String*));
+
 	String parameterName;
 	String* pParameterName = &parameterName;
 
@@ -178,7 +182,7 @@ Function function_tokenizer(char init)
 				if (ch == ',')
 				{
 					/* We need to think twice about the memory structure and management here */
-					add_tail(&(pFunction->paramList), pParameterName);
+					add_tail(pParameterList, pParameterName);
 					init_string(pParameterName);
 
 
@@ -201,7 +205,7 @@ Function function_tokenizer(char init)
 
 	}
 	append_to(pParameterName, ch);
-
+	resultFunction.paramList = parameterList;
 	return resultFunction;
 }
 
