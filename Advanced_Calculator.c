@@ -119,6 +119,9 @@ typedef struct Function
 
 } Function;
 
+void print_string(const String* pString);
+void print_function(const Function* pFunction);
+
 /* Rewrite expression tokenizer in this way! */
 /* And many parsers also/as well */
 Function function_tokenizer(char init)
@@ -151,7 +154,7 @@ Function function_tokenizer(char init)
 
 	List parameterList;
 	List* pParameterList = &parameterList;
-	init_list(pParameterList, sizeof(String*));
+	init_list(pParameterList, sizeof(String));
 
 	String parameterName;
 	String* pParameterName = &parameterName;
@@ -183,6 +186,7 @@ Function function_tokenizer(char init)
 				{
 					/* We need to think twice about the memory structure and management here */
 					add_tail(pParameterList, pParameterName);
+					print_string(pParameterName);
 					init_string(pParameterName);
 
 
@@ -205,7 +209,10 @@ Function function_tokenizer(char init)
 
 	}
 	append_to(pParameterName, ch);
+	add_tail(pParameterList, pParameterName);
+	print_string(pParameterName);
 	resultFunction.paramList = parameterList;
+	print_function(&resultFunction);
 	return resultFunction;
 }
 
@@ -227,7 +234,7 @@ void print_function(const Function* pFunction)
 	Node* pParams = (Node*)pFunction->paramList.pHead;
 	while (pParams != NULL)
 	{
-		print_string((String*)pParams->pElement);
+		print_string((String*)(pParams->pElement));
 		if (pParams->pNext != NULL)
 		{
 			printf(",");
