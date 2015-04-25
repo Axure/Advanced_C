@@ -6,6 +6,17 @@ using namespace std;
 std::map<std::string, int> monthMap;
 /* Clang doesn't support C++0x style initializer yet! */
 
+int before_the_day(int month, int day)
+{
+	if (month >= 3) return 1;
+	if (month == 1) return -1;
+	if (month == 2)
+	{
+		if (day <= 28) return -1;
+		if (day == 29) return 0;
+	}
+}
+
 int with_the_day(int month, int day, int year)
 {
 	if (!(year % 4 == 0 && !(year % 100 == 0 ^ year % 400 == 0))) return 0;
@@ -24,7 +35,8 @@ int with_the_day(int month, int day, int year)
 bool have_the_day(int year)
 {
 	// std::cout << std::endl << "in is " << !(year % 100 == 0 ^ year % 400 == 0) << std::endl;
-	return (year % 4 == 0 && !(year % 100 == 0 ^ year % 400 == 0));
+	// return (year % 4 == 0 && !(year % 100 == 0 ^ year % 400 == 0));
+	return ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0));
 }
 
 int lowest_four(int year)
@@ -139,7 +151,7 @@ int main(int argc, char const *argv[])
 	monthMap["July"] = 7;
 	monthMap["August"] = 8;
 	monthMap["September"] = 9;
-	monthMap["Octorber"] = 10;
+	monthMap["October"] = 10;
 	monthMap["November"] = 11;
 	monthMap["December"] = 12;
 
@@ -177,18 +189,24 @@ int main(int argc, char const *argv[])
 #ifdef _DEBUG
 		std::cout << sMonth_ << day_ << " " << year_  << std::endl;
 #endif
+		
 		result = count_the_day_between(year, year_);
+
 #ifdef _DEBUG
 		std::cout << "Case #" << i + 1 << ": " << result << std::endl;
 #endif		
-		result += with_the_day(month, day, year);
+		// result += with_the_day(month, day, year);
 #ifdef _DEBUG
 		printf("%d, %d\n", with_the_day(month, day, year_), with_the_day(month_, day_, year_));
 #endif
-		result += with_the_day(month_, day_, year_);
-		if (year == year_ && count_the_day_between(year, year) == 1 && with_the_day(month_, day_, year_) == -1) result += 1;
-		if (year == year_ && count_the_day_between(year, year) == 1 && with_the_day(month, day, year) == 0) result -= 1;
-		std::cout << "Case #" << i + 1 << ": " << result << std::endl;
+		// result += with_the_day(month_, day_, year_);
+		// if (year == year_ && count_the_day_between(year, year) == 1 && with_the_day(month_, day_, year_) == -1) result += 1;
+		// if (year == year_ && count_the_day_between(year, year) == 1 && with_the_day(month, day, year) == 0) result -= 1;
+		if (have_the_day(year) && before_the_day(month, day) == 1) result -= 1;
+		if (have_the_day(year_) && before_the_day(month_, day_) == -1) result -= 1;
+
+		std::cout << "Case #" << i + 1 << ": " << result;
+		if (i != T - 1) cout << endl;
 
 	}
 
